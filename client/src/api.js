@@ -138,6 +138,7 @@ function parseProductForm(fd) {
     stock: Number(fd.get('stock')) === 2 ? 2 : 1,
     category_id: fd.get('category_id') ? Number(fd.get('category_id')) : null,
     zone_id: fd.get('zone_id') ? Number(fd.get('zone_id')) : null,
+    sub_zone: String(fd.get('sub_zone') || '').trim() || null,
     alert_threshold: Math.max(0, Number(fd.get('alert_threshold')) || 0),
   };
 }
@@ -321,12 +322,12 @@ export async function exportCsv(settings) {
   const products = await fetchAll('products_list');
   const stockNames = { 1: settings.stock1_name || 'Stock 1', 2: settings.stock2_name || 'Stock 2' };
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const header = ['Nom', 'Code-barres', 'Quantité', 'Unité', 'Seuil alerte', 'Stock', 'Catégorie', 'Zone', 'Dernière modification'];
+  const header = ['Nom', 'Code-barres', 'Quantité', 'Unité', 'Seuil alerte', 'Stock', 'Catégorie', 'Zone', 'Emplacement', 'Dernière modification'];
   const lines = [header.map(esc).join(';')];
   for (const r of products.sort((a, b) => a.name.localeCompare(b.name, 'fr'))) {
     lines.push(
       [r.name, r.barcode, String(r.quantity).replace('.', ','), r.unit, String(r.alert_threshold).replace('.', ','),
-       stockNames[r.stock], r.category_name, r.zone_name, new Date(r.updated_at).toLocaleString('fr-FR')].map(esc).join(';')
+       stockNames[r.stock], r.category_name, r.zone_name, r.sub_zone, new Date(r.updated_at).toLocaleString('fr-FR')].map(esc).join(';')
     );
   }
   const csv = '﻿' + lines.join('\r\n');

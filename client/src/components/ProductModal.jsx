@@ -47,6 +47,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
       stock: product?.stock || 1,
       category_id: product?.category_id || '',
       zone_id: product?.zone_id || '',
+      sub_zone: product?.sub_zone || '',
       alert_threshold: product?.alert_threshold ?? '',
     });
     setPhotoFile(null);
@@ -181,11 +182,13 @@ export default function ProductModal({ open, onClose, product, categories, zones
             </select>
           </Field>
 
-          <div className="sm:col-span-2">
-            <Field label="Seuil d'alerte" hint="Une alerte apparaît quand la quantité passe sous ce seuil (0 = pas d'alerte).">
-              <input className="input" type="number" step="any" min="0" value={form.alert_threshold} onChange={set('alert_threshold')} placeholder="0" />
-            </Field>
-          </div>
+          <Field label="Emplacement dans la zone" hint="Optionnel — pour préciser où dans la zone/armoire.">
+            <input className="input" placeholder="ex. étagère 2" value={form.sub_zone || ''} onChange={set('sub_zone')} />
+          </Field>
+
+          <Field label="Seuil d'alerte" hint="Alerte quand la quantité passe sous ce seuil (0 = pas d'alerte).">
+            <input className="input" type="number" step="any" min="0" value={form.alert_threshold} onChange={set('alert_threshold')} placeholder="0" />
+          </Field>
 
           <div className="mt-2 flex items-center justify-between gap-2 sm:col-span-2">
             {isEdit ? (

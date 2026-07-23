@@ -111,7 +111,7 @@ export default function Dashboard({ alertsOnly = false }) {
             <p className="mt-0.5 flex flex-wrap gap-x-2 text-[13px] text-slate-500">
               <span className="font-medium text-brand-700">{stockName(p.stock)}</span>
               {p.category_name && <span>· {p.category_name}</span>}
-              {p.zone_name && <span>· {p.zone_name}</span>}
+              {(p.zone_name || p.sub_zone) && <span>· {[p.zone_name, p.sub_zone].filter(Boolean).join(' · ')}</span>}
             </p>
           </div>
           <div className="text-right">
