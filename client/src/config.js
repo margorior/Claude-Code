@@ -10,5 +10,5 @@
 // règles d'accès du fichier supabase/schema.sql.
 // ============================================================================
 
-export const SUPABASE_URL = 'REMPLACEZ-MOI';
-export const SUPABASE_ANON_KEY = 'REMPLACEZ-MOI';
+export const SUPABASE_URL = 'https://ejchqemmmyiecggkjyin.supabase.co/rest/v1/';
+export const SUPABASE_ANON_KEY = 'sb_publishable_U88GPbEVNvATKeA_5hx7gg_pyZZ7xCX';
