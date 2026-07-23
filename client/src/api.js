@@ -338,20 +338,62 @@ function download(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-export async function exportCsv(settings) {
+// Export en vrai fichier Excel (.xlsx) : contrairement au CSV, l'encodage
+// y est sans ambiguïté — les accents passent partout (Excel, Google Sheets…).
+const xmlEsc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const cellStr = (v) => `<c t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+const cellNum = (v) => `<c><v>${Number(v) || 0}</v></c>`;
+
+export async function exportExcel(settings) {
+  const { default: JSZip } = await import('jszip');
   const products = await fetchAll('products_list');
   const stockNames = { 1: settings.stock1_name || 'Stock 1', 2: settings.stock2_name || 'Stock 2' };
-  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+
   const header = ['Nom', 'Code-barres', 'Quantité', 'Unité', 'Seuil alerte', 'Stock', 'Catégorie', 'Zone', 'Emplacement', 'Dernière modification'];
-  const lines = [header.map(esc).join(';')];
+  const rows = [header.map(cellStr).join('')];
   for (const r of products.sort((a, b) => a.name.localeCompare(b.name, 'fr'))) {
-    lines.push(
-      [r.name, r.barcode, String(r.quantity).replace('.', ','), r.unit, String(r.alert_threshold).replace('.', ','),
-       stockNames[r.stock], r.category_name, r.zone_name, r.sub_zone, new Date(r.updated_at).toLocaleString('fr-FR')].map(esc).join(';')
+    rows.push(
+      [cellStr(r.name), cellStr(r.barcode), cellNum(r.quantity), cellStr(r.unit), cellNum(r.alert_threshold),
+       cellStr(stockNames[r.stock]), cellStr(r.category_name), cellStr(r.zone_name), cellStr(r.sub_zone),
+       cellStr(new Date(r.updated_at).toLocaleString('fr-FR'))].join('')
     );
   }
-  const csv = '﻿' + lines.join('\r\n');
-  download(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `inventaire-${new Date().toISOString().slice(0, 10)}.csv`);
+  const sheet =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' +
+    rows.map((cells) => `<row>${cells}</row>`).join('') +
+    '</sheetData></worksheet>';
+
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '</Types>');
+  zip.file('_rels/.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>');
+  zip.file('xl/workbook.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="Inventaire" sheetId="1" r:id="rId1"/></sheets></workbook>');
+  zip.file('xl/_rels/workbook.xml.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '</Relationships>');
+  zip.file('xl/worksheets/sheet1.xml', sheet);
+
+  const buf = await zip.generateAsync({ type: 'arraybuffer' });
+  download(
+    new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    `inventaire-${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
 }
 
 export async function exportBackup() {

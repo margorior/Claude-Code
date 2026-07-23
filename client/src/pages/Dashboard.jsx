@@ -3,7 +3,7 @@ import {
   Plus, Minus, Search, Pencil, PackageOpen, Bell, ScanBarcode, X,
   ArrowUpDown, FileSpreadsheet, ImageOff,
 } from 'lucide-react';
-import { api, exportCsv, photoUrl } from '../api';
+import { api, exportExcel, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
 import { Spinner, EmptyState, Pagination, useToast } from '../components/ui';
 import ProductModal from '../components/ProductModal';
@@ -168,11 +168,11 @@ export default function Dashboard({ alertsOnly = false }) {
         <div className="flex gap-2">
           <button
             className="btn-ghost"
-            title="Télécharger l'inventaire (Excel/CSV)"
+            title="Télécharger l'inventaire (fichier Excel)"
             disabled={exporting}
             onClick={async () => {
               setExporting(true);
-              try { await exportCsv(settings); } catch (e) { toast(e.message, 'error'); }
+              try { await exportExcel(settings); } catch (e) { toast(e.message, 'error'); }
               setExporting(false);
             }}
           >
