@@ -100,7 +100,7 @@ async function listProducts(q) {
   const search = q.get('search');
   if (search) {
     const s = sanitizeSearch(search);
-    if (s) query = query.or(`name.ilike.%${s}%,barcode.eq.${s}`);
+    if (s) query = query.or(`name.ilike.%${s}%,barcode.ilike.%${s}%`);
   }
   if (q.get('category')) query = query.eq('category_id', Number(q.get('category')));
   if (q.get('zone')) query = query.eq('zone_id', Number(q.get('zone')));
