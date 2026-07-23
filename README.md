@@ -2,79 +2,50 @@
 
 Application web complète pour gérer **deux stocks** de matériel, avec comptes utilisateurs à trois niveaux, alertes de stock bas, historique des mouvements, sauvegarde/restauration et mode application mobile (PWA).
 
+**100 % gratuite à héberger** : le site est servi par **GitHub Pages**, les données et les comptes par **Supabase** (offre gratuite).
+
+➡️ **Pour la mettre en ligne : suivez [INSTALLATION.md](INSTALLATION.md)** (~10 minutes, aucune compétence technique requise).
+
 ## ✨ Fonctionnalités
 
 - **3 niveaux d'accès**
   - 👑 **Administrateur** : tout faire — valider les inscriptions, gérer les rôles, les paramètres, les sauvegardes
-  - 🔧 **Gestionnaire** : gérer le stock (ajouter/modifier/supprimer des produits, catégories, zones)
+  - 🔧 **Gestionnaire** : gérer le stock (produits, catégories, zones)
   - 👁️ **Lecteur** : consultation seule
-- **Inscription protégée** : un mot de passe d'accès (défini par l'admin) est demandé pour créer un compte, puis l'admin valide chaque compte dans l'onglet *Utilisateurs*
+- **Inscription protégée** : un mot de passe d'accès (défini par l'admin) est demandé pour créer un compte, puis l'admin valide chaque compte dans l'onglet *Utilisateurs* — le tout premier compte créé devient automatiquement administrateur
 - **Produits** : photo, nom, unité (pièce, mètre, …), quantité, catégorie, zone de rangement, stock 1 ou 2, seuil d'alerte, code-barres
 - **Boutons + / −** pour prendre ou remettre du matériel en deux clics
-- **Recherche** par nom ou code-barres, **filtres** par stock / catégorie / zone, **tri** par nom, quantité, etc.
-- **Onglet Alertes** : tous les produits sous leur seuil, avec badge dans le menu
+- **Recherche** par nom ou code-barres, **filtres** par stock / catégorie / zone, **tri**, pagination
+- **Onglet Alertes** : produits sous leur seuil, avec badge dans le menu
 - **Catégories & zones** entièrement modifiables
 - **Historique** : qui a pris/remis quoi, quand
-- **Sauvegarde complète** (ZIP : données + photos) téléchargeable et **restaurable sur un autre serveur**
+- **Sauvegarde complète** (ZIP : données + photos) téléchargeable et restaurable — pratique pour migrer
 - **Export Excel/CSV** de l'inventaire
 - **PWA** : installable sur téléphone, **scan de code-barres** avec la caméra
-- Conçu pour tenir **des milliers de références** sans ralentir (pagination + index SQLite)
+- Conçu pour tenir **des milliers de références** sans ralentir
 
-## 🚀 Installation
+## 🔧 Architecture
 
-Prérequis : [Node.js](https://nodejs.org) 18 ou plus récent.
+```
+client/            Interface React + Vite + Tailwind (site statique)
+  src/config.js    ← les 2 seules valeurs à remplir (URL + clé Supabase)
+supabase/
+  schema.sql       Base de données complète : tables, règles de sécurité
+                   par rôle (RLS), fonctions (ajustements, restauration…)
+.github/workflows/ Déploiement automatique sur GitHub Pages à chaque commit
+```
+
+- La sécurité des rôles est appliquée **côté Supabase** (Row Level Security) : même en bidouillant le site, un lecteur ne peut pas modifier le stock et un compte non validé n'a accès à rien.
+- Les mots de passe sont gérés par Supabase Auth ; le site ne stocke aucun secret.
+
+## 💻 Développement en local
 
 ```bash
-npm run setup    # installe tout et compile l'interface (à faire une seule fois)
-npm start        # démarre l'application
+cd client
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-Puis ouvrez **http://localhost:3000**
+Remplissez d'abord `client/src/config.js` avec les valeurs de votre projet Supabase (voir [INSTALLATION.md](INSTALLATION.md)).
 
-> Pour changer le port : `PORT=8080 npm start`
-
-### Première connexion
-
-| | |
-|---|---|
-| Utilisateur | `admin` |
-| Mot de passe | `admin123` |
-| Mot de passe d'accès à l'inscription | `bienvenue` |
-
-⚠️ **Changez ces deux mots de passe immédiatement** dans *Paramètres* après la première connexion.
-
-### Avec Docker (optionnel)
-
-```bash
-docker build -t gestion-stock .
-docker run -d -p 3000:3000 -v stock-data:/app/data --name stock gestion-stock
-```
-
-## 💾 Vos données & migration de serveur
-
-Toutes les données (base, photos, clé de session) vivent dans le dossier **`data/`**.
-
-Deux façons de migrer vers un autre serveur :
-
-1. **Copier le dossier `data/`** vers la nouvelle installation, ou
-2. *Paramètres → Télécharger la sauvegarde* sur l'ancien serveur, puis *Importer une sauvegarde* sur le nouveau.
-
-Pensez à télécharger une sauvegarde régulièrement : c'est votre assurance.
-
-## 📱 Utilisation sur téléphone
-
-Ouvrez l'application dans le navigateur du téléphone, puis « Ajouter à l'écran d'accueil » : elle s'installe comme une vraie application.
-
-> Le scan de code-barres nécessite un accès caméra, qui n'est autorisé par les navigateurs qu'en **HTTPS** (ou sur `localhost`). Si vous hébergez l'appli sur un serveur, mettez-la derrière un reverse-proxy HTTPS (Caddy le fait automatiquement, par exemple).
-
-## 🛠️ Technique
-
-- **Backend** : Node.js + Express + SQLite (`better-sqlite3`) — aucune base de données à installer
-- **Frontend** : React + Vite + Tailwind CSS
-- **Auth** : sessions JWT en cookie httpOnly, mots de passe hachés (bcrypt)
-
-```
-server/    API Express (auth, produits, catégories, zones, utilisateurs, sauvegardes)
-client/    Interface React (compilée dans client/dist, servie par le serveur)
-data/      Vos données (créé au premier lancement — jamais dans git)
-```
+> ℹ️ Une ancienne version autonome (serveur Node.js + SQLite, sans Supabase) existe dans l'historique git si vous préférez un jour héberger vous-même sur votre propre machine.

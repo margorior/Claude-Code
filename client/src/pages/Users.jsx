@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { UsersRound, Check, Trash2, ShieldCheck, Wrench, Eye, Clock } from 'lucide-react';
+import { UsersRound, Check, Trash2, ShieldCheck, Wrench, Eye, Clock, Ban, RotateCcw } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { ConfirmDialog, useToast, Spinner, EmptyState } from '../components/ui';
@@ -38,7 +38,7 @@ export default function Users() {
   const doDelete = async () => {
     try {
       await api(`/api/users/${toDelete.id}`, { method: 'DELETE' });
-      toast('Utilisateur supprimé');
+      toast('Accès supprimé');
       setToDelete(null);
       load();
     } catch (err) {
@@ -51,7 +51,7 @@ export default function Users() {
   }
 
   const pending = users.filter((u) => u.status === 'pending');
-  const active = users.filter((u) => u.status === 'active');
+  const others = users.filter((u) => u.status !== 'pending');
 
   const roleSelect = (u) => (
     <select
@@ -86,7 +86,7 @@ export default function Users() {
                 <button className="btn-primary !bg-emerald-600 !px-3 !py-2 hover:!bg-emerald-700" onClick={() => update(u.id, { status: 'active' }, `${u.display_name} accepté(e)`)}>
                   <Check size={16} /> Accepter
                 </button>
-                <button className="btn-ghost !px-3 !py-2 !text-red-600" onClick={() => setToDelete(u)}>
+                <button className="btn-ghost !px-3 !py-2 !text-red-600" title="Refuser" onClick={() => setToDelete(u)}>
                   <Trash2 size={16} />
                 </button>
               </li>
@@ -98,33 +98,41 @@ export default function Users() {
       <div className="card overflow-hidden">
         <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5">
           <UsersRound size={17} className="text-brand-600" />
-          <h2 className="font-bold text-slate-900">Comptes actifs ({active.length})</h2>
+          <h2 className="font-bold text-slate-900">Comptes ({others.length})</h2>
         </div>
-        {active.length === 0 ? (
-          <EmptyState icon={UsersRound} title="Aucun compte actif" />
+        {others.length === 0 ? (
+          <EmptyState icon={UsersRound} title="Aucun compte" />
         ) : (
           <ul className="divide-y divide-slate-100">
-            {active.map((u) => {
+            {others.map((u) => {
               const role = ROLES.find((r) => r.value === u.role);
               const Icon = role.icon;
+              const disabled = u.status === 'disabled';
               return (
-                <li key={u.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+                <li key={u.id} className={`flex flex-wrap items-center gap-3 px-5 py-3.5 ${disabled ? 'opacity-60' : ''}`}>
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                    u.role === 'admin' ? 'bg-brand-100 text-brand-700' : u.role === 'gestionnaire' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                    disabled ? 'bg-slate-100 text-slate-400' : u.role === 'admin' ? 'bg-brand-100 text-brand-700' : u.role === 'gestionnaire' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                   }`}>
                     <Icon size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-800">
                       {u.display_name} {u.id === me.id && <span className="text-xs font-bold text-brand-600">(vous)</span>}
+                      {disabled && <span className="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-500">désactivé</span>}
                     </p>
                     <p className="text-[13px] text-slate-400">@{u.username} · {role.desc}</p>
                   </div>
                   {roleSelect(u)}
                   {u.id !== me.id && (
-                    <button className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600" onClick={() => setToDelete(u)}>
-                      <Trash2 size={16} />
-                    </button>
+                    disabled ? (
+                      <button className="btn-ghost !px-3 !py-2" title="Réactiver" onClick={() => update(u.id, { status: 'active' }, `${u.display_name} réactivé(e)`)}>
+                        <RotateCcw size={16} /> Réactiver
+                      </button>
+                    ) : (
+                      <button className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600" title="Désactiver l'accès" onClick={() => update(u.id, { status: 'disabled' }, `${u.display_name} désactivé(e)`)}>
+                        <Ban size={16} />
+                      </button>
+                    )
                   )}
                 </li>
               );
@@ -137,8 +145,9 @@ export default function Users() {
         open={!!toDelete}
         onClose={() => setToDelete(null)}
         onConfirm={doDelete}
-        title={`Supprimer le compte de ${toDelete?.display_name} ?`}
-        message="Cette personne ne pourra plus se connecter. Cette action est définitive."
+        title={`Refuser l'accès de ${toDelete?.display_name} ?`}
+        message="Cette personne ne pourra pas utiliser l'application."
+        confirmLabel="Refuser"
       />
     </div>
   );

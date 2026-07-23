@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { Modal, useToast, Spinner } from './ui';
-import { api } from '../api';
+import { api, photoUrl } from '../api';
 
 export default function AdjustModal({ open, onClose, product, direction, onSaved }) {
   const toast = useToast();
@@ -38,7 +38,7 @@ export default function AdjustModal({ open, onClose, product, direction, onSaved
     <Modal open={open} onClose={onClose} title={isOut ? 'Prendre du matériel' : 'Remettre du matériel'}>
       <div className="mb-4 flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
         {product.photo ? (
-          <img src={`/uploads/${product.photo}`} alt="" className="h-12 w-12 rounded-xl object-cover" />
+          <img src={photoUrl(product.photo)} alt="" className="h-12 w-12 rounded-xl object-cover" />
         ) : (
           <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${isOut ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
             {isOut ? <Minus size={20} /> : <Plus size={20} />}

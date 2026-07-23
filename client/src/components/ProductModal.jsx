@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, Trash2, ScanBarcode } from 'lucide-react';
 import { Modal, Field, ConfirmDialog, useToast, Spinner } from './ui';
-import { api } from '../api';
+import { api, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
 import ScannerModal from './ScannerModal';
 
@@ -50,7 +50,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
       alert_threshold: product?.alert_threshold ?? '',
     });
     setPhotoFile(null);
-    setPhotoPreview(product?.photo ? `/uploads/${product.photo}` : null);
+    setPhotoPreview(product?.photo ? photoUrl(product.photo) : null);
     setRemovePhoto(false);
   }, [open, product]);
 

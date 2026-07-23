@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Warehouse, KeyRound, DatabaseBackup, Download, Upload, Lock } from 'lucide-react';
-import { api } from '../api';
+import { api, exportBackup, importBackup } from '../api';
 import { useAuth } from '../AuthContext';
 import { Field, useToast, Spinner, ConfirmDialog } from '../components/ui';
 
@@ -24,8 +24,9 @@ export default function Settings() {
   const toast = useToast();
   const fileRef = useRef();
   const [form, setForm] = useState({ stock1_name: '', stock2_name: '', registration_password: '' });
-  const [pwd, setPwd] = useState({ current: '', next: '' });
+  const [newPwd, setNewPwd] = useState('');
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
 
@@ -53,21 +54,30 @@ export default function Settings() {
   const changePassword = async (e) => {
     e.preventDefault();
     try {
-      await api('/api/auth/password', { method: 'PUT', json: pwd });
-      setPwd({ current: '', next: '' });
+      await api('/api/auth/password', { method: 'PUT', json: { next: newPwd } });
+      setNewPwd('');
       toast('Mot de passe modifié');
     } catch (err) {
       toast(err.message, 'error');
     }
   };
 
+  const doExport = async () => {
+    setExporting(true);
+    try {
+      await exportBackup();
+      toast('Sauvegarde téléchargée');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    setExporting(false);
+  };
+
   const doImport = async () => {
     setImporting(true);
     try {
-      const fd = new FormData();
-      fd.append('backup', importFile);
-      const r = await api('/api/backup/import', { method: 'POST', body: fd });
-      toast(`Sauvegarde importée (${r.products} produits). Reconnectez-vous si besoin.`);
+      const r = await importBackup(importFile);
+      toast(`Sauvegarde restaurée (${r.products} produits)`);
       setImportFile(null);
       window.dispatchEvent(new Event('stock-changed'));
       setTimeout(() => window.location.reload(), 1200);
@@ -104,11 +114,8 @@ export default function Settings() {
 
         <Section icon={Lock} title="Mon mot de passe" subtitle="Changer votre mot de passe de connexion">
           <form onSubmit={changePassword} className="flex flex-col gap-4">
-            <Field label="Mot de passe actuel">
-              <input className="input" type="password" required autoComplete="current-password" value={pwd.current} onChange={(e) => setPwd({ ...pwd, current: e.target.value })} />
-            </Field>
             <Field label="Nouveau mot de passe" hint="6 caractères minimum">
-              <input className="input" type="password" required autoComplete="new-password" value={pwd.next} onChange={(e) => setPwd({ ...pwd, next: e.target.value })} />
+              <input className="input" type="password" required autoComplete="new-password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
             </Field>
             <button className="btn-primary self-end"><KeyRound size={16} /> Modifier</button>
           </form>
@@ -119,12 +126,12 @@ export default function Settings() {
             <Section
               icon={DatabaseBackup}
               title="Sauvegarde & migration"
-              subtitle="Téléchargez une sauvegarde complète (produits, photos, comptes, historique) ou restaurez-la sur un autre serveur"
+              subtitle="Téléchargez une sauvegarde complète (produits, photos, historique) ou restaurez-la — par exemple sur un nouveau projet Supabase"
             >
               <div className="flex flex-col gap-3 sm:flex-row">
-                <a href="/api/backup" className="btn-primary flex-1 !py-3">
-                  <Download size={17} /> Télécharger la sauvegarde
-                </a>
+                <button className="btn-primary flex-1 !py-3" onClick={doExport} disabled={exporting}>
+                  {exporting ? <Spinner className="h-4 w-4" /> : <><Download size={17} /> Télécharger la sauvegarde</>}
+                </button>
                 <input
                   ref={fileRef}
                   type="file"
@@ -137,7 +144,8 @@ export default function Settings() {
                 </button>
               </div>
               <p className="mt-3 text-xs text-slate-400">
-                ⚠️ L'import remplace <strong>toutes</strong> les données actuelles (produits, comptes, historique) par celles de la sauvegarde.
+                ⚠️ L'import remplace <strong>tout le stock actuel</strong> (produits, catégories, zones, historique, paramètres) par le contenu de la sauvegarde.
+                Les comptes utilisateurs, eux, restent gérés par Supabase et ne sont pas touchés.
               </p>
             </Section>
           </div>
@@ -149,7 +157,7 @@ export default function Settings() {
         onClose={() => setImportFile(null)}
         onConfirm={doImport}
         title="Restaurer cette sauvegarde ?"
-        message={`Toutes les données actuelles seront remplacées par le contenu de « ${importFile?.name} ». Cette action est irréversible.`}
+        message={`Tout le stock actuel sera remplacé par le contenu de « ${importFile?.name} ». Cette action est irréversible.`}
         confirmLabel="Restaurer"
       />
     </div>

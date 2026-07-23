@@ -13,7 +13,7 @@ const ACTIONS = {
 };
 
 function fmtDate(iso) {
-  const d = new Date(iso.replace(' ', 'T') + 'Z');
+  const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
   return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 

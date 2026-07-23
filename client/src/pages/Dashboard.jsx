@@ -3,9 +3,9 @@ import {
   Plus, Minus, Search, Pencil, PackageOpen, Bell, ScanBarcode, X,
   ArrowUpDown, FileSpreadsheet, ImageOff,
 } from 'lucide-react';
-import { api } from '../api';
+import { api, exportCsv, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
-import { Spinner, EmptyState, Pagination } from '../components/ui';
+import { Spinner, EmptyState, Pagination, useToast } from '../components/ui';
 import ProductModal from '../components/ProductModal';
 import AdjustModal from '../components/AdjustModal';
 import ScannerModal from '../components/ScannerModal';
@@ -21,6 +21,8 @@ function useDebounced(value, ms = 300) {
 
 export default function Dashboard({ alertsOnly = false }) {
   const { isManager, settings } = useAuth();
+  const toast = useToast();
+  const [exporting, setExporting] = useState(false);
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [alertCount, setAlertCount] = useState(0);
@@ -91,7 +93,7 @@ export default function Dashboard({ alertsOnly = false }) {
       <div key={p.id} className="card flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center">
         <div className="flex flex-1 items-center gap-3.5">
           {p.photo ? (
-            <img src={`/uploads/${p.photo}`} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+            <img src={photoUrl(p.photo)} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
           ) : (
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
               <ImageOff size={20} />
@@ -164,9 +166,19 @@ export default function Dashboard({ alertsOnly = false }) {
           </p>
         </div>
         <div className="flex gap-2">
-          <a href="/api/export/csv" className="btn-ghost" title="Télécharger l'inventaire (Excel/CSV)">
-            <FileSpreadsheet size={17} /> <span className="hidden sm:inline">Export Excel</span>
-          </a>
+          <button
+            className="btn-ghost"
+            title="Télécharger l'inventaire (Excel/CSV)"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try { await exportCsv(settings); } catch (e) { toast(e.message, 'error'); }
+              setExporting(false);
+            }}
+          >
+            {exporting ? <Spinner className="h-4 w-4" /> : <FileSpreadsheet size={17} />}
+            <span className="hidden sm:inline">Export Excel</span>
+          </button>
           {isManager && !alertsOnly && (
             <button className="btn-primary" onClick={() => setProductModal({ open: true, product: null })}>
               <Plus size={18} strokeWidth={2.5} /> Ajouter
