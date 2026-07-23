@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Bell, Tags, ScrollText, UsersRound, Settings, LogOut, Zap, Menu, X } from 'lucide-react';
+import { LayoutGrid, Bell, Tags, ScrollText, UsersRound, Settings, LogOut, Zap, Menu, X, Smartphone, Share } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { api } from './api';
+import { Modal } from './components/ui';
 
 const ROLE_LABELS = { admin: 'Administrateur', gestionnaire: 'Gestionnaire', lecteur: 'Lecteur' };
 
@@ -11,6 +12,33 @@ export default function Layout() {
   const navigate = useNavigate();
   const [alertCount, setAlertCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [installEvt, setInstallEvt] = useState(null);
+  const [installHelp, setInstallHelp] = useState(false);
+
+  // Déjà installée (lancée depuis l'icône) → on cache le bouton
+  const installed =
+    window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  useEffect(() => {
+    const onPrompt = (e) => {
+      e.preventDefault();
+      setInstallEvt(e);
+    };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+  }, []);
+
+  const install = async () => {
+    setMenuOpen(false);
+    if (installEvt) {
+      installEvt.prompt();
+      const { outcome } = await installEvt.userChoice;
+      if (outcome === 'accepted') setInstallEvt(null);
+    } else {
+      // Navigateur sans invite automatique (iPhone…) : on explique
+      setInstallHelp(true);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -59,6 +87,15 @@ export default function Layout() {
           )}
         </NavLink>
       ))}
+      {!installed && (
+        <button
+          onClick={install}
+          className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-white/25 px-3.5 py-2.5 text-sm font-semibold text-brand-100/80 transition hover:bg-white/10 hover:text-white"
+        >
+          <Smartphone size={18} />
+          <span className="flex-1 text-left">Installer l'appli</span>
+        </button>
+      )}
     </nav>
   );
 
@@ -119,6 +156,33 @@ export default function Layout() {
       <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
         <Outlet />
       </main>
+
+      <Modal open={installHelp} onClose={() => setInstallHelp(false)} title="Installer l'application">
+        <div className="flex flex-col gap-4 text-sm text-slate-600">
+          <p>
+            L'application s'installe directement depuis le navigateur, sans passer par un magasin
+            d'applications :
+          </p>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="mb-1 font-bold text-slate-800">📱 Sur iPhone / iPad (Safari)</p>
+            <p>
+              Touchez le bouton <strong>Partager</strong> <Share size={14} className="inline -mt-0.5" /> en bas de
+              l'écran, puis <strong>« Sur l'écran d'accueil »</strong> et validez.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="mb-1 font-bold text-slate-800">🤖 Sur Android (Chrome)</p>
+            <p>
+              Ouvrez le menu <strong>⋮</strong> en haut à droite, puis{' '}
+              <strong>« Ajouter à l'écran d'accueil »</strong> (ou « Installer l'application »).
+            </p>
+          </div>
+          <p className="text-xs text-slate-400">
+            L'icône ⚡ apparaît alors sur votre écran d'accueil et l'appli s'ouvre en plein écran, comme
+            une application classique.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }
