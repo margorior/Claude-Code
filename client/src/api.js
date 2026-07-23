@@ -226,15 +226,35 @@ async function deleteRef(table, id) {
 async function listMovements(q) {
   const limit = Math.min(Number(q.get('limit')) || 50, 200);
   const page = Math.max(Number(q.get('page')) || 1, 1);
-  let query = supabase.from('movements').select('*', { count: 'exact' });
-  const search = q.get('search');
-  if (search) {
-    const s = sanitizeSearch(search);
-    if (s) query = query.or(`product_name.ilike.%${s}%,user_name.ilike.%${s}%`);
-  }
-  const { data, error, count } = await query.order('id', { ascending: false }).range((page - 1) * limit, page * limit - 1);
+
+  const build = (table, withJoins) => {
+    let query = supabase.from(table).select('*', { count: 'exact' });
+    const search = q.get('search');
+    if (search) {
+      const s = sanitizeSearch(search);
+      if (s) query = query.ilike('product_name', `%${s}%`);
+    }
+    if (q.get('user')) query = query.eq('user_name', q.get('user'));
+    if (q.get('action')) query = query.eq('action', q.get('action'));
+    if (withJoins) {
+      if (q.get('category')) query = query.eq('category_id', Number(q.get('category')));
+      if (q.get('stock')) query = query.eq('stock', Number(q.get('stock')));
+    }
+    return query.order('id', { ascending: false }).range((page - 1) * limit, page * limit - 1);
+  };
+
+  // movements_list (avec catégorie/stock) ; repli sur la table brute si la
+  // base n'a pas encore reçu la mise à jour du schéma
+  let { data, error, count } = await build('movements_list', true);
+  if (error) ({ data, error, count } = await build('movements', false));
   if (error) throw fail(error.message);
   return { items: data || [], total: count || 0, page, limit };
+}
+
+async function movementUsers() {
+  const { data, error } = await supabase.from('movement_users').select('*').order('user_name');
+  if (error) return { users: [] };
+  return { users: (data || []).map((r) => r.user_name) };
 }
 
 /* ---------------------------------------------------------- UTILISATEURS */
@@ -411,7 +431,7 @@ export async function api(path, options = {}) {
     if (method === 'PUT') return renameRef(seg[0], Number(seg[1]), body.name, label);
     if (method === 'DELETE') return deleteRef(seg[0], Number(seg[1]));
   }
-  if (seg[0] === 'movements') return listMovements(q);
+  if (seg[0] === 'movements') return seg[1] === 'users' ? movementUsers() : listMovements(q);
   if (seg[0] === 'users') {
     if (seg.length === 1) return listUsers();
     if (method === 'PUT') return updateUser(seg[1], body);

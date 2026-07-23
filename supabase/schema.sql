@@ -109,8 +109,9 @@ insert into public.categories (name) values
   ('Câbles'), ('Prises'), ('Interrupteurs'), ('Disjoncteurs'), ('Luminaires'), ('Gaines')
 on conflict (name) do nothing;
 
-insert into public.zones (name) values
-  ('Étagère A'), ('Étagère B'), ('Réserve')
+-- Zones par défaut : les lettres A à Z
+insert into public.zones (name)
+  select chr(64 + g) from generate_series(1, 26) as g
 on conflict (name) do nothing;
 
 -- Vue de lecture : produits + noms de catégorie/zone + drapeau d'alerte
@@ -125,6 +126,26 @@ select
 from public.products p
 left join public.categories c on c.id = p.category_id
 left join public.zones z on z.id = p.zone_id;
+
+-- Vue de l'historique : mouvements + catégorie/stock du produit concerné
+-- (pour pouvoir filtrer l'historique par catégorie, stock, personne…)
+drop view if exists public.movements_list;
+create view public.movements_list
+with (security_invoker = true) as
+select
+  m.*,
+  p.category_id,
+  c.name as category_name,
+  p.stock
+from public.movements m
+left join public.products p on p.id = m.product_id
+left join public.categories c on c.id = p.category_id;
+
+-- Liste des personnes apparaissant dans l'historique (pour le filtre)
+drop view if exists public.movement_users;
+create view public.movement_users
+with (security_invoker = true) as
+select distinct user_name from public.movements;
 
 -- --------------------------------------------------------------- SÉCURITÉ
 alter table public.profiles enable row level security;
