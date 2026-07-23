@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Trash2, ScanBarcode } from 'lucide-react';
+import { Camera, Trash2, ScanBarcode, Image as ImageIcon, ImageOff } from 'lucide-react';
 import { Modal, Field, ConfirmDialog, useToast, Spinner } from './ui';
 import { api, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
@@ -7,7 +7,8 @@ import ScannerModal from './ScannerModal';
 
 const UNITS = ['pièce', 'mètre', 'boîte', 'rouleau', 'sachet', 'kg', 'litre', 'paquet', 'lot'];
 
-// Réduit la photo côté client (max 900px, JPEG) pour garder la base légère
+// Réduit la photo côté client (max 900px) et la convertit en WebP
+// (format très léger) pour garder la base rapide et économe.
 async function resizeImage(file) {
   try {
     const bmp = await createImageBitmap(file);
@@ -17,7 +18,12 @@ async function resizeImage(file) {
     canvas.width = Math.round(bmp.width * scale);
     canvas.height = Math.round(bmp.height * scale);
     canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.82));
+    let blob = await new Promise((r) => canvas.toBlob(r, 'image/webp', 0.8));
+    if (blob && blob.type === 'image/webp') {
+      return new File([blob], 'photo.webp', { type: 'image/webp' });
+    }
+    // Vieux navigateur sans WebP : on retombe sur du JPEG
+    blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.82));
     return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
   } catch {
     return file;
@@ -29,6 +35,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
   const toast = useToast();
   const isEdit = !!product;
   const fileRef = useRef();
+  const cameraRef = useRef();
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
@@ -107,11 +114,13 @@ export default function ProductModal({ open, onClose, product, categories, zones
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
           {/* Photo */}
           <div className="sm:col-span-2">
+            {/* capture="environment" ouvre directement l'appareil photo arrière */}
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={pickPhoto} />
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickPhoto} />
             <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => fileRef.current.click()}
+                onClick={() => cameraRef.current.click()}
                 className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-brand-400 hover:text-brand-500"
               >
                 {photoPreview ? (
@@ -121,17 +130,24 @@ export default function ProductModal({ open, onClose, product, categories, zones
                 )}
               </button>
               <div className="text-sm text-slate-500">
-                <p className="font-semibold text-slate-700">Photo du produit</p>
-                <p className="text-xs">Optionnelle — cliquez pour choisir ou prendre une photo.</p>
-                {photoPreview && (
-                  <button
-                    type="button"
-                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); }}
-                    className="mt-1 text-xs font-semibold text-red-600 hover:underline"
-                  >
-                    Retirer la photo
+                <p className="font-semibold text-slate-700">Photo du produit <span className="font-normal text-slate-400">(optionnelle)</span></p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" className="btn-ghost !px-3 !py-1.5 !text-xs" onClick={() => cameraRef.current.click()}>
+                    <Camera size={14} /> Prendre une photo
                   </button>
-                )}
+                  <button type="button" className="btn-ghost !px-3 !py-1.5 !text-xs" onClick={() => fileRef.current.click()}>
+                    <ImageIcon size={14} /> Galerie
+                  </button>
+                  {photoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); }}
+                      className="btn-ghost !px-3 !py-1.5 !text-xs !text-red-600"
+                    >
+                      <ImageOff size={14} /> Retirer
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
