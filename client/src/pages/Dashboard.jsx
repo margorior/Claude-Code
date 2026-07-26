@@ -32,11 +32,12 @@ export default function Dashboard({ alertsOnly = false }) {
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search);
-  const [filters, setFilters] = useState({ category: '', zone: '', stock: '' });
+  const [filters, setFilters] = useState({ category: '', zone: '', stock: '', brand: '' });
   const [sort, setSort] = useState({ by: 'name', dir: 'asc' });
 
   const [categories, setCategories] = useState([]);
   const [zones, setZones] = useState([]);
+  const [brands, setBrands] = useState([]);
 
   const [productModal, setProductModal] = useState({ open: false, product: null });
   const [adjust, setAdjust] = useState({ open: false, product: null, direction: 'out' });
@@ -44,9 +45,10 @@ export default function Dashboard({ alertsOnly = false }) {
 
   const loadRefs = useCallback(async () => {
     try {
-      const [c, z] = await Promise.all([api('/api/categories'), api('/api/zones')]);
+      const [c, z, b] = await Promise.all([api('/api/categories'), api('/api/zones'), api('/api/products/brands')]);
       setCategories(c.items);
       setZones(z.items);
+      setBrands(b.brands);
     } catch {}
   }, []);
 
@@ -61,6 +63,7 @@ export default function Dashboard({ alertsOnly = false }) {
       if (filters.category) params.set('category', filters.category);
       if (filters.zone) params.set('zone', filters.zone);
       if (filters.stock) params.set('stock', filters.stock);
+      if (filters.brand) params.set('brand', filters.brand);
       if (alertsOnly) params.set('alertsOnly', '1');
       const d = await api(`/api/products?${params}`);
       setItems(d.items);
@@ -83,7 +86,7 @@ export default function Dashboard({ alertsOnly = false }) {
     setSort((s) => ({ by, dir: s.by === by && s.dir === 'asc' ? 'desc' : 'asc' }));
 
   const stockName = (n) => (n === 2 ? settings.stock2_name : settings.stock1_name);
-  const hasFilters = filters.category || filters.zone || filters.stock || search;
+  const hasFilters = filters.category || filters.zone || filters.stock || filters.brand || search;
 
   const fmtQty = (q) => (Number.isInteger(q) ? q : String(q).replace('.', ','));
 
@@ -102,6 +105,7 @@ export default function Dashboard({ alertsOnly = false }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <p className="font-bold text-slate-900">{p.name}</p>
+              {p.brand && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">{p.brand}</span>}
               {inAlert && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
                   <Bell size={11} /> Stock bas
@@ -110,6 +114,7 @@ export default function Dashboard({ alertsOnly = false }) {
             </div>
             <p className="mt-0.5 flex flex-wrap gap-x-2 text-[13px] text-slate-500">
               <span className="font-medium text-brand-700">{stockName(p.stock)}</span>
+              {p.reference && <span>· Réf. {p.reference}</span>}
               {p.category_name && <span>· {p.category_name}</span>}
               {(p.zone_name || p.sub_zone) && <span>· {[p.zone_name, p.sub_zone].filter(Boolean).join(' · ')}</span>}
             </p>
@@ -209,7 +214,7 @@ export default function Dashboard({ alertsOnly = false }) {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <select className="input" value={filters.stock} onChange={(e) => setFilters({ ...filters, stock: e.target.value })}>
               <option value="">Tous les stocks</option>
               <option value="1">{settings.stock1_name}</option>
@@ -222,6 +227,10 @@ export default function Dashboard({ alertsOnly = false }) {
             <select className="input" value={filters.zone} onChange={(e) => setFilters({ ...filters, zone: e.target.value })}>
               <option value="">Zones</option>
               {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+            </select>
+            <select className="input" value={filters.brand} onChange={(e) => setFilters({ ...filters, brand: e.target.value })}>
+              <option value="">Marques</option>
+              {brands.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
         </div>

@@ -96,25 +96,40 @@ async function listProducts(q) {
   const sort = sortMap[q.get('sort')] || 'name';
   const asc = q.get('dir') !== 'desc';
 
-  let query = supabase.from('products_list').select('*', { count: 'exact' });
-  const search = q.get('search');
-  if (search) {
-    const s = sanitizeSearch(search);
-    if (s) query = query.or(`name.ilike.%${s}%,barcode.ilike.%${s}%`);
-  }
-  if (q.get('category')) query = query.eq('category_id', Number(q.get('category')));
-  if (q.get('zone')) query = query.eq('zone_id', Number(q.get('zone')));
-  if (q.get('stock')) query = query.eq('stock', Number(q.get('stock')));
-  if (q.get('alertsOnly') === '1') query = query.eq('in_alert', true);
-  query = query.order(sort, { ascending: asc, nullsFirst: asc }).order('id', { ascending: true });
-  query = query.range((page - 1) * limit, page * limit - 1);
+  const build = (withBrand) => {
+    let query = supabase.from('products_list').select('*', { count: 'exact' });
+    const search = q.get('search');
+    if (search) {
+      const s = sanitizeSearch(search);
+      if (s) {
+        query = withBrand
+          ? query.or(`name.ilike.%${s}%,barcode.ilike.%${s}%,brand.ilike.%${s}%,reference.ilike.%${s}%`)
+          : query.or(`name.ilike.%${s}%,barcode.ilike.%${s}%`);
+      }
+    }
+    if (q.get('category')) query = query.eq('category_id', Number(q.get('category')));
+    if (q.get('zone')) query = query.eq('zone_id', Number(q.get('zone')));
+    if (q.get('stock')) query = query.eq('stock', Number(q.get('stock')));
+    if (withBrand && q.get('brand')) query = query.eq('brand', q.get('brand'));
+    if (q.get('alertsOnly') === '1') query = query.eq('in_alert', true);
+    query = query.order(sort, { ascending: asc, nullsFirst: asc }).order('id', { ascending: true });
+    return query.range((page - 1) * limit, page * limit - 1);
+  };
 
-  const [{ data, error, count }, alertRes] = await Promise.all([
-    query,
+  // Repli sans marque/référence tant que le schéma Supabase n'est pas à jour
+  let [{ data, error, count }, alertRes] = await Promise.all([
+    build(true),
     supabase.from('products_list').select('id', { count: 'exact', head: true }).eq('in_alert', true),
   ]);
+  if (error) ({ data, error, count } = await build(false));
   if (error) throw fail(error.message);
   return { items: data || [], total: count || 0, page, limit, alertCount: alertRes.count || 0 };
+}
+
+async function productBrands() {
+  const { data, error } = await supabase.from('product_brands').select('*').order('brand');
+  if (error) return { brands: [] };
+  return { brands: (data || []).map((r) => r.brand) };
 }
 
 async function uploadPhoto(file) {
@@ -132,6 +147,8 @@ function removePhotoQuietly(path) {
 function parseProductForm(fd) {
   return {
     name: String(fd.get('name') || '').trim(),
+    brand: String(fd.get('brand') || '').trim() || null,
+    reference: String(fd.get('reference') || '').trim() || null,
     barcode: String(fd.get('barcode') || '').trim() || null,
     unit: String(fd.get('unit') || 'pièce').trim() || 'pièce',
     quantity: Math.max(0, Number(fd.get('quantity')) || 0),
@@ -349,11 +366,11 @@ export async function exportExcel(settings) {
   const products = await fetchAll('products_list');
   const stockNames = { 1: settings.stock1_name || 'Stock 1', 2: settings.stock2_name || 'Stock 2' };
 
-  const header = ['Nom', 'Code-barres', 'Quantité', 'Unité', 'Seuil alerte', 'Stock', 'Catégorie', 'Zone', 'Emplacement', 'Dernière modification'];
+  const header = ['Nom', 'Marque', 'Référence', 'Code-barres', 'Quantité', 'Unité', 'Seuil alerte', 'Stock', 'Catégorie', 'Zone', 'Emplacement', 'Dernière modification'];
   const rows = [header.map(cellStr).join('')];
   for (const r of products.sort((a, b) => a.name.localeCompare(b.name, 'fr'))) {
     rows.push(
-      [cellStr(r.name), cellStr(r.barcode), cellNum(r.quantity), cellStr(r.unit), cellNum(r.alert_threshold),
+      [cellStr(r.name), cellStr(r.brand), cellStr(r.reference), cellStr(r.barcode), cellNum(r.quantity), cellStr(r.unit), cellNum(r.alert_threshold),
        cellStr(stockNames[r.stock]), cellStr(r.category_name), cellStr(r.zone_name), cellStr(r.sub_zone),
        cellStr(new Date(r.updated_at).toLocaleString('fr-FR'))].join('')
     );
@@ -461,6 +478,7 @@ export async function api(path, options = {}) {
     if (seg[1] === 'password') return changePassword(body);
   }
   if (seg[0] === 'products') {
+    if (seg[1] === 'brands') return productBrands();
     if (seg.length === 1) return method === 'POST' ? createProduct(body) : listProducts(q);
     if (seg[2] === 'adjust') return supabase.rpc('adjust_quantity', { pid: Number(seg[1]), delta: Number(body.delta) })
       .then(({ data, error }) => { if (error) throw fail(error.message); return { ok: true, quantity: data }; });

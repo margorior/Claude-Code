@@ -48,6 +48,8 @@ export default function ProductModal({ open, onClose, product, categories, zones
     if (!open) return;
     setForm({
       name: product?.name || '',
+      brand: product?.brand || '',
+      reference: product?.reference || '',
       barcode: product?.barcode || '',
       unit: product?.unit || 'pièce',
       quantity: product?.quantity ?? '',
@@ -157,6 +159,14 @@ export default function ProductModal({ open, onClose, product, categories, zones
               <input className="input" required placeholder="ex. Câble 3G2,5 mm²" value={form.name || ''} onChange={set('name')} />
             </Field>
           </div>
+
+          <Field label="Marque">
+            <input className="input" placeholder="ex. Legrand, Schneider…" value={form.brand || ''} onChange={set('brand')} />
+          </Field>
+
+          <Field label="Référence">
+            <input className="input" placeholder="ex. LEG-099204" value={form.reference || ''} onChange={set('reference')} />
+          </Field>
 
           <Field label="Code-barres">
             <div className="flex gap-2">
