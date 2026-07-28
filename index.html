@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Suivi des chantiers</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>✅</text></svg>"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <!-- Écran de connexion -->
+    <main id="login" class="login">
+      <form id="login-form" class="login-card" autocomplete="off">
+        <h1>Suivi des chantiers</h1>
+        <p class="login-hint">Saisissez le mot de passe pour accéder à l'application.</p>
+        <input
+          id="password"
+          type="password"
+          placeholder="Mot de passe"
+          aria-label="Mot de passe"
+          required
+        />
+        <p id="login-error" class="login-error" hidden>Mot de passe incorrect.</p>
+        <button type="submit">Se connecter</button>
+      </form>
+    </main>
+
+    <!-- Application -->
+    <div id="app" hidden>
+      <header class="topbar">
+        <h1>Suivi des chantiers</h1>
+        <button id="logout" class="ghost" type="button">Se déconnecter</button>
+      </header>
+      <main id="communes" class="communes"></main>
+    </div>
+
+    <!-- Dialogue de confirmation de décoche -->
+    <dialog id="confirm-dialog" class="dialog">
+      <form method="dialog" class="dialog-body">
+        <h2>Invalider ce chantier ?</h2>
+        <p>Pour éviter une erreur, tapez <strong>CONFIRMER</strong> pour invalider ce chantier.</p>
+        <input
+          id="confirm-input"
+          type="text"
+          placeholder="CONFIRMER"
+          aria-label="Tapez CONFIRMER"
+          autocomplete="off"
+        />
+        <div class="dialog-actions">
+          <button value="cancel" class="ghost">Annuler</button>
+          <button id="confirm-validate" value="confirm" class="danger" disabled>
+            Invalider
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
