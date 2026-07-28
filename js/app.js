@@ -7,7 +7,13 @@ const chantierId = (commune, categorie, index) =>
   `${commune}::${categorie}::${index}`;
 
 let storage;
-let done = new Set();
+let done = new Map(); // id du chantier -> date ISO de validation (ou null)
+
+const formatDate = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("fr-FR");
+};
 
 // --- Écran de connexion --------------------------------------------------
 
@@ -91,9 +97,13 @@ function makeRow(commune, categorie, nom, index) {
   label.className = "chantier-label";
   label.textContent = nom;
 
+  const date = document.createElement("span");
+  date.className = "done-date";
+  date.textContent = formatDate(done.get(id));
+
   checkbox.addEventListener("change", async () => {
     if (checkbox.checked) {
-      await setDone(id, li, checkbox, true);
+      await setDone(id, li, date, true);
       return;
     }
     // Décoche : on annule visuellement puis on demande confirmation.
@@ -101,20 +111,22 @@ function makeRow(commune, categorie, nom, index) {
     const confirmed = await askConfirmation();
     if (confirmed) {
       checkbox.checked = false;
-      await setDone(id, li, checkbox, false);
+      await setDone(id, li, date, false);
     }
   });
 
-  li.append(checkbox, label);
+  li.append(checkbox, label, date);
   return li;
 }
 
-async function setDone(id, li, checkbox, value) {
+async function setDone(id, li, dateEl, value) {
+  const when = value ? new Date().toISOString() : null;
   li.classList.toggle("is-done", value);
-  value ? done.add(id) : done.delete(id);
+  value ? done.set(id, when) : done.delete(id);
+  dateEl.textContent = formatDate(when);
   updateCounts();
   try {
-    await storage.setCompleted(id, value);
+    await storage.setCompleted(id, value, when);
   } catch (error) {
     console.error("Échec de la sauvegarde.", error);
   }
@@ -192,7 +204,7 @@ async function start() {
     done = await storage.load();
   } catch (error) {
     console.error("Impossible de charger l'état, démarrage à vide.", error);
-    done = new Set();
+    done = new Map();
   }
   render();
 

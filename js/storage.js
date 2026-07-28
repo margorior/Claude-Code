@@ -1,8 +1,9 @@
 // Couche de stockage enfichable.
 // Expose une interface commune, quel que soit le backend choisi dans config.js :
-//   load()                -> Promise<Set<string>>  (ids des chantiers terminés)
-//   setCompleted(id, done)-> Promise<void>
-//   subscribe(onChange)   -> écoute les changements distants (temps réel, si dispo)
+//   load()                        -> Promise<Map<string, string|null>>
+//                                    (id des chantiers terminés -> date ISO de validation, ou null)
+//   setCompleted(id, done, when)  -> Promise<void>
+//   subscribe(onChange)           -> écoute les changements distants (temps réel, si dispo)
 
 import { config } from "./config.js";
 
@@ -11,17 +12,21 @@ const LOCAL_KEY = "chantiers-status";
 function localAdapter() {
   const read = () => {
     const raw = localStorage.getItem(LOCAL_KEY);
-    return new Set(raw ? JSON.parse(raw) : []);
+    if (!raw) return new Map();
+    const parsed = JSON.parse(raw);
+    // Ancien format : simple tableau d'ids, sans dates.
+    if (Array.isArray(parsed)) return new Map(parsed.map((id) => [id, null]));
+    return new Map(Object.entries(parsed));
   };
 
   return {
     async load() {
       return read();
     },
-    async setCompleted(id, done) {
-      const set = read();
-      done ? set.add(id) : set.delete(id);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify([...set]));
+    async setCompleted(id, done, when) {
+      const map = read();
+      done ? map.set(id, when) : map.delete(id);
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(Object.fromEntries(map)));
     },
     subscribe() {
       // Pas de temps réel en mode local (état propre à chaque navigateur).
@@ -38,16 +43,26 @@ async function supabaseAdapter() {
 
   return {
     async load() {
-      const { data, error } = await client
+      let { data, error } = await client
         .from(table)
-        .select("id")
+        .select("id, done_at")
         .eq("done", true);
-      if (error) throw error;
-      return new Set(data.map((row) => row.id));
+      if (error) {
+        // Base sans la colonne done_at (créée avant l'ajout des dates).
+        ({ data, error } = await client.from(table).select("id").eq("done", true));
+        if (error) throw error;
+      }
+      return new Map(data.map((row) => [row.id, row.done_at ?? null]));
     },
-    async setCompleted(id, done) {
-      const { error } = await client.from(table).upsert({ id, done });
-      if (error) throw error;
+    async setCompleted(id, done, when) {
+      let { error } = await client
+        .from(table)
+        .upsert({ id, done, done_at: done ? when : null });
+      if (error) {
+        // Base sans la colonne done_at : on sauvegarde au moins l'état coché.
+        ({ error } = await client.from(table).upsert({ id, done }));
+        if (error) throw error;
+      }
     },
     subscribe(onChange) {
       client

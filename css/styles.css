@@ -241,6 +241,18 @@ input:focus-visible {
   color: var(--done-text);
 }
 
+/* Date de validation, visible uniquement quand le chantier est terminé. */
+.done-date {
+  display: none;
+  font-size: 0.8rem;
+  color: var(--done-text);
+  white-space: nowrap;
+}
+
+.chantier.is-done .done-date {
+  display: inline;
+}
+
 /* Le ✓ apparaît quand le chantier est terminé. */
 .chantier.is-done .chantier-label::after {
   content: " ✓";

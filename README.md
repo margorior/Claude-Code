@@ -115,7 +115,8 @@ Pour que **tout le monde voie le même état en temps réel**, activez Supabase
    ```sql
    create table chantiers_status (
      id text primary key,
-     done boolean not null default false
+     done boolean not null default false,
+     done_at timestamptz
    );
    alter table chantiers_status enable row level security;
 
@@ -143,6 +144,9 @@ Pour que **tout le monde voie le même état en temps réel**, activez Supabase
 
 En cas d'indisponibilité de Supabase, l'application bascule automatiquement
 sur le stockage local pour rester utilisable.
+
+> Base créée avant l'ajout des dates de validation ? Exécutez une fois :
+> `alter table chantiers_status add column if not exists done_at timestamptz;`
 
 ## Structure du projet
 
