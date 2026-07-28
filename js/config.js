@@ -3,7 +3,7 @@
 
 export const config = {
   // Mot de passe d'accès. Changez simplement cette valeur.
-  password: "chantiers2026",
+  password: "1234",
 
   // Mode de stockage :
   //   "local"    -> propre à chaque navigateur (aucune configuration, marche tout de suite)
