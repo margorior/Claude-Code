@@ -144,6 +144,17 @@ input:focus-visible {
   font-size: 1.2rem;
 }
 
+.sync-warning {
+  max-width: 1100px;
+  margin: 1rem auto 0;
+  padding: 0.7rem 1rem;
+  border: 1px solid #f5c6a5;
+  border-radius: 8px;
+  background: #fdf3e7;
+  color: #8a4b08;
+  font-size: 0.9rem;
+}
+
 /* --- Communes & cartes ------------------------------------------------- */
 
 .communes {

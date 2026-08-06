@@ -198,13 +198,33 @@ function updateCounts() {
 
 // --- Démarrage ------------------------------------------------------------
 
+const LOAD_TIMEOUT_MS = 8000;
+
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("délai de chargement dépassé")), ms)
+    ),
+  ]);
+
 async function start() {
   storage = await createStorage();
+  const syncWarning = document.getElementById("sync-warning");
   try {
-    done = await storage.load();
+    const loaded = await withTimeout(storage.load(), LOAD_TIMEOUT_MS);
+    // Tolère un storage.js d'une version précédente encore en cache
+    // navigateur, qui renvoie un Set d'ids au lieu d'une Map avec dates.
+    done =
+      loaded instanceof Map
+        ? loaded
+        : new Map([...loaded].map((id) => [id, null]));
+    syncWarning.hidden = true;
   } catch (error) {
-    console.error("Impossible de charger l'état, démarrage à vide.", error);
+    // Base injoignable : on affiche quand même les chantiers, avec un avertissement.
+    console.error("Impossible de charger l'état.", error);
     done = new Map();
+    syncWarning.hidden = false;
   }
   render();
 
