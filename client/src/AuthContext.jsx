@@ -2,15 +2,16 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { api } from './api';
 
 const AuthContext = createContext(null);
+const DEFAULT_SETTINGS = { stock1_name: 'Stock 1', stock2_name: 'Stock 2', stock3_name: 'E.P.' };
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [settings, setSettings] = useState({ stock1_name: 'Stock 1', stock2_name: 'Stock 2' });
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
   const refreshSettings = useCallback(async () => {
     try {
-      setSettings(await api('/api/settings'));
+      setSettings({ ...DEFAULT_SETTINGS, ...(await api('/api/settings')) });
     } catch {}
   }, []);
 

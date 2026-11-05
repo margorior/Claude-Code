@@ -51,7 +51,7 @@ export default function Login() {
             <Zap size={30} className="text-amber-300" fill="currentColor" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-white">Gestion de Stock</h1>
-          <p className="mt-1 text-sm text-brand-100/80">Matériel électrique · deux stocks, un seul outil</p>
+          <p className="mt-1 text-sm text-brand-100/80">Matériel électrique · trois stocks, un seul outil</p>
         </div>
 
         <div className="card overflow-hidden !rounded-3xl">

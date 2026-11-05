@@ -23,7 +23,7 @@ export default function Settings() {
   const { isAdmin, settings, refreshSettings } = useAuth();
   const toast = useToast();
   const fileRef = useRef();
-  const [form, setForm] = useState({ stock1_name: '', stock2_name: '', registration_password: '' });
+  const [form, setForm] = useState({ stock1_name: '', stock2_name: '', stock3_name: '', registration_password: '' });
   const [newPwd, setNewPwd] = useState('');
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -34,6 +34,7 @@ export default function Settings() {
     setForm({
       stock1_name: settings.stock1_name || '',
       stock2_name: settings.stock2_name || '',
+      stock3_name: settings.stock3_name || '',
       registration_password: settings.registration_password || '',
     });
   }, [settings]);
@@ -94,13 +95,16 @@ export default function Settings() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {isAdmin && (
-          <Section icon={Warehouse} title="Noms des stocks" subtitle="Personnalisez le nom de vos deux stocks">
+          <Section icon={Warehouse} title="Noms des stocks" subtitle="Personnalisez le nom de vos trois stocks">
             <form onSubmit={saveSettings} className="flex flex-col gap-4">
               <Field label="Nom du stock 1">
                 <input className="input" value={form.stock1_name} onChange={(e) => setForm({ ...form, stock1_name: e.target.value })} />
               </Field>
               <Field label="Nom du stock 2">
                 <input className="input" value={form.stock2_name} onChange={(e) => setForm({ ...form, stock2_name: e.target.value })} />
+              </Field>
+              <Field label="Nom du stock 3">
+                <input className="input" value={form.stock3_name} onChange={(e) => setForm({ ...form, stock3_name: e.target.value })} />
               </Field>
               <Field label="Mot de passe d'accès à l'inscription" hint="À communiquer aux personnes autorisées à créer un compte.">
                 <input className="input" value={form.registration_password} onChange={(e) => setForm({ ...form, registration_password: e.target.value })} />

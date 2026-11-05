@@ -152,7 +152,7 @@ function parseProductForm(fd) {
     barcode: String(fd.get('barcode') || '').trim() || null,
     unit: String(fd.get('unit') || 'pièce').trim() || 'pièce',
     quantity: Math.max(0, Number(fd.get('quantity')) || 0),
-    stock: Number(fd.get('stock')) === 2 ? 2 : 1,
+    stock: [1, 2, 3].includes(Number(fd.get('stock'))) ? Number(fd.get('stock')) : 1,
     category_id: fd.get('category_id') ? Number(fd.get('category_id')) : null,
     zone_id: fd.get('zone_id') ? Number(fd.get('zone_id')) : null,
     sub_zone: String(fd.get('sub_zone') || '').trim() || null,
@@ -319,7 +319,7 @@ async function getSettings() {
 
 async function putSettings(body) {
   const rows = [];
-  for (const key of ['stock1_name', 'stock2_name', 'registration_password']) {
+  for (const key of ['stock1_name', 'stock2_name', 'stock3_name', 'registration_password']) {
     if (body[key] !== undefined && String(body[key]).trim() !== '') rows.push({ key, value: String(body[key]).trim() });
   }
   const { error } = await supabase.from('settings').upsert(rows);
@@ -364,7 +364,7 @@ const cellNum = (v) => `<c><v>${Number(v) || 0}</v></c>`;
 export async function exportExcel(settings) {
   const { default: JSZip } = await import('jszip');
   const products = await fetchAll('products_list');
-  const stockNames = { 1: settings.stock1_name || 'Stock 1', 2: settings.stock2_name || 'Stock 2' };
+  const stockNames = { 1: settings.stock1_name || 'Stock 1', 2: settings.stock2_name || 'Stock 2', 3: settings.stock3_name || 'E.P.' };
 
   const header = ['Nom', 'Marque', 'Référence', 'Code-barres', 'Quantité', 'Unité', 'Seuil alerte', 'Stock', 'Catégorie', 'Zone', 'Emplacement', 'Dernière modification'];
   const rows = [header.map(cellStr).join('')];

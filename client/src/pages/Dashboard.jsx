@@ -85,7 +85,7 @@ export default function Dashboard({ alertsOnly = false }) {
   const toggleSort = (by) =>
     setSort((s) => ({ by, dir: s.by === by && s.dir === 'asc' ? 'desc' : 'asc' }));
 
-  const stockName = (n) => (n === 2 ? settings.stock2_name : settings.stock1_name);
+  const stockName = (n) => settings[`stock${n}_name`] || settings.stock1_name;
   const hasFilters = filters.category || filters.zone || filters.stock || filters.brand || search;
 
   const fmtQty = (q) => (Number.isInteger(q) ? q : String(q).replace('.', ','));
@@ -219,6 +219,7 @@ export default function Dashboard({ alertsOnly = false }) {
               <option value="">Tous les stocks</option>
               <option value="1">{settings.stock1_name}</option>
               <option value="2">{settings.stock2_name}</option>
+              <option value="3">{settings.stock3_name}</option>
             </select>
             <select className="input" value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
               <option value="">Catégories</option>

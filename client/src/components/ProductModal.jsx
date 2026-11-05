@@ -198,6 +198,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
             <select className="input" value={form.stock || 1} onChange={set('stock')}>
               <option value={1}>{settings.stock1_name}</option>
               <option value={2}>{settings.stock2_name}</option>
+              <option value={3}>{settings.stock3_name}</option>
             </select>
           </Field>
 

@@ -90,6 +90,7 @@ export default function History() {
             <option value="">Tous les stocks</option>
             <option value="1">{settings.stock1_name}</option>
             <option value="2">{settings.stock2_name}</option>
+            <option value="3">{settings.stock3_name}</option>
           </select>
         </div>
         {hasFilters && (
