@@ -4,6 +4,12 @@ import { Modal, Field, ConfirmDialog, useToast, Spinner } from './ui';
 import { api, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
 import ScannerModal from './ScannerModal';
+import CameraModal from './CameraModal';
+
+// Seuls les téléphones/tablettes Android et Apple ouvrent l'appareil photo via
+// l'attribut capture ; sur PC (Windows…) il ouvre l'explorateur de fichiers.
+const NATIVE_CAPTURE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
 const UNITS = ['pièce', 'mètre', 'boîte', 'rouleau', 'sachet', 'kg', 'litre', 'paquet', 'lot'];
 
@@ -39,6 +45,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [removePhoto, setRemovePhoto] = useState(false);
@@ -66,13 +73,21 @@ export default function ProductModal({ open, onClose, product, categories, zones
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  const pickPhoto = async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  const applyPhoto = async (f) => {
     const resized = await resizeImage(f);
     setPhotoFile(resized);
     setPhotoPreview(URL.createObjectURL(resized));
     setRemovePhoto(false);
+  };
+
+  const pickPhoto = (e) => {
+    const f = e.target.files?.[0];
+    if (f) applyPhoto(f);
+  };
+
+  const takePhoto = () => {
+    if (NATIVE_CAPTURE || !navigator.mediaDevices?.getUserMedia) cameraRef.current.click();
+    else setCameraOpen(true);
   };
 
   const save = async (e) => {
@@ -122,7 +137,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
             <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => cameraRef.current.click()}
+                onClick={takePhoto}
                 className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-brand-400 hover:text-brand-500"
               >
                 {photoPreview ? (
@@ -134,7 +149,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
               <div className="text-sm text-slate-500">
                 <p className="font-semibold text-slate-700">Photo du produit <span className="font-normal text-slate-400">(optionnelle)</span></p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <button type="button" className="btn-ghost !px-3 !py-1.5 !text-xs" onClick={() => cameraRef.current.click()}>
+                  <button type="button" className="btn-ghost !px-3 !py-1.5 !text-xs" onClick={takePhoto}>
                     <Camera size={14} /> Prendre une photo
                   </button>
                   <button type="button" className="btn-ghost !px-3 !py-1.5 !text-xs" onClick={() => fileRef.current.click()}>
@@ -241,6 +256,7 @@ export default function ProductModal({ open, onClose, product, categories, zones
         message={`« ${product?.name} » sera définitivement supprimé du stock.`}
       />
 
+      <CameraModal open={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={(f) => { applyPhoto(f); setCameraOpen(false); }} />
       <ScannerModal open={scanOpen} onClose={() => setScanOpen(false)} onScan={(code) => { setForm((f) => ({ ...f, barcode: code })); setScanOpen(false); }} />
     </>
   );
