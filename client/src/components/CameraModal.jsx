@@ -1,15 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, SwitchCamera } from 'lucide-react';
 import { Modal } from './ui';
-
-const REAR = /rear|back|arri[eè]re|environment/i;
-
-function cameraError(err) {
-  if (err?.name === 'NotAllowedError') return "Accès à la caméra refusé. Autorisez la caméra pour ce site (icône à gauche de l'adresse), puis réessayez.";
-  if (err?.name === 'NotFoundError') return 'Aucune caméra détectée sur cet appareil.';
-  if (err?.name === 'NotReadableError') return 'La caméra est déjà utilisée par une autre application. Fermez-la puis réessayez.';
-  return "Impossible d'accéder à la caméra.";
-}
+import { listCameras, preferredCamera, nextCamera, cameraError } from '../lib/cameras';
 
 export default function CameraModal({ open, onClose, onCapture }) {
   const videoRef = useRef(null);
@@ -32,16 +24,13 @@ export default function CameraModal({ open, onClose, onCapture }) {
         stream = s;
         if (cancelled) return s.getTracks().forEach((t) => t.stop());
         videoRef.current.srcObject = s;
-        const track = s.getVideoTracks()[0];
-        const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput');
+        const id = s.getVideoTracks()[0].getSettings().deviceId;
+        const cams = await listCameras();
         if (cancelled) return;
         setCameras(cams);
-        setActiveId(track.getSettings().deviceId);
-        // Sur Windows, « caméra arrière » n'est pas toujours reconnu : on la cherche par son nom
-        if (!deviceId && !REAR.test(track.label)) {
-          const rear = cams.find((c) => REAR.test(c.label));
-          if (rear) setDeviceId(rear.deviceId);
-        }
+        setActiveId(id);
+        const better = !deviceId && preferredCamera(cams, id);
+        if (better) setDeviceId(better);
       })
       .catch((err) => !cancelled && setError(cameraError(err)));
     return () => {
@@ -49,11 +38,6 @@ export default function CameraModal({ open, onClose, onCapture }) {
       stream?.getTracks().forEach((t) => t.stop());
     };
   }, [open, deviceId]);
-
-  const switchCamera = () => {
-    const i = cameras.findIndex((c) => c.deviceId === activeId);
-    setDeviceId(cameras[(i + 1) % cameras.length].deviceId);
-  };
 
   const capture = () => {
     const v = videoRef.current;
@@ -80,7 +64,7 @@ export default function CameraModal({ open, onClose, onCapture }) {
           />
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
             {cameras.length > 1 && (
-              <button type="button" className="btn-ghost" onClick={switchCamera}>
+              <button type="button" className="btn-ghost" onClick={() => setDeviceId(nextCamera(cameras, activeId))}>
                 <SwitchCamera size={18} /> Changer de caméra
               </button>
             )}
