@@ -121,6 +121,18 @@ insert into public.zones (name)
   select chr(64 + g) from generate_series(1, 26) as g
 on conflict (name) do nothing;
 
+-- Texte simplifié pour la recherche : minuscules, sans accents, sans
+-- ponctuation ni espaces (« Câble 3G 2,5 mm² » → « cable3g25mm2 »).
+-- Doit rester identique à searchWords() dans client/src/api.js.
+create or replace function public.search_norm(t text) returns text
+language sql immutable as $$
+  select regexp_replace(
+    translate(replace(replace(lower(coalesce(t, '')), 'œ', 'oe'), 'æ', 'ae'),
+      'àáâãäåçèéêëìíîïñòóôõöùúûüýÿ²³', 'aaaaaaceeeeiiiinooooouuuuyy23'),
+    '[^a-z0-9]', '', 'g')
+$$;
+grant execute on function public.search_norm(text) to anon, authenticated;
+
 -- Vue de lecture : produits + noms de catégorie/zone + drapeau d'alerte
 drop view if exists public.products_list;
 create view public.products_list
@@ -129,7 +141,9 @@ select
   p.*,
   (p.alert_threshold > 0 and p.quantity <= p.alert_threshold) as in_alert,
   c.name as category_name,
-  z.name as zone_name
+  z.name as zone_name,
+  concat_ws('|', public.search_norm(p.name), public.search_norm(p.brand),
+    public.search_norm(p.reference), public.search_norm(p.barcode)) as search_text
 from public.products p
 left join public.categories c on c.id = p.category_id
 left join public.zones z on z.id = p.zone_id;
@@ -143,7 +157,8 @@ select
   m.*,
   p.category_id,
   c.name as category_name,
-  p.stock
+  p.stock,
+  public.search_norm(m.product_name) as search_text
 from public.movements m
 left join public.products p on p.id = m.product_id
 left join public.categories c on c.id = p.category_id;

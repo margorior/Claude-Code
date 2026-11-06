@@ -89,6 +89,17 @@ function sanitizeSearch(s) {
   return String(s).replace(/[,()]/g, ' ').trim();
 }
 
+// Même normalisation que public.search_norm (schema.sql), mot par mot
+function searchWords(s) {
+  return String(s)
+    .toLowerCase()
+    .replace(/œ/g, 'oe').replace(/æ/g, 'ae').replace(/²/g, '2').replace(/³/g, '3')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z0-9]/g, ''))
+    .filter(Boolean);
+}
+
 async function listProducts(q) {
   const limit = Math.min(Number(q.get('limit')) || 50, 200);
   const page = Math.max(Number(q.get('page')) || 1, 1);
@@ -96,13 +107,15 @@ async function listProducts(q) {
   const sort = sortMap[q.get('sort')] || 'name';
   const asc = q.get('dir') !== 'desc';
 
-  const build = (withBrand) => {
+  const build = (mode) => {
     let query = supabase.from('products_list').select('*', { count: 'exact' });
     const search = q.get('search');
-    if (search) {
+    if (search && mode === 'norm') {
+      for (const w of searchWords(search)) query = query.ilike('search_text', `%${w}%`);
+    } else if (search) {
       const s = sanitizeSearch(search);
       if (s) {
-        query = withBrand
+        query = mode === 'brand'
           ? query.or(`name.ilike.%${s}%,barcode.ilike.%${s}%,brand.ilike.%${s}%,reference.ilike.%${s}%`)
           : query.or(`name.ilike.%${s}%,barcode.ilike.%${s}%`);
       }
@@ -110,18 +123,20 @@ async function listProducts(q) {
     if (q.get('category')) query = query.eq('category_id', Number(q.get('category')));
     if (q.get('zone')) query = query.eq('zone_id', Number(q.get('zone')));
     if (q.get('stock')) query = query.eq('stock', Number(q.get('stock')));
-    if (withBrand && q.get('brand')) query = query.eq('brand', q.get('brand'));
+    if (mode !== 'basic' && q.get('brand')) query = query.eq('brand', q.get('brand'));
     if (q.get('alertsOnly') === '1') query = query.eq('in_alert', true);
     query = query.order(sort, { ascending: asc, nullsFirst: asc }).order('id', { ascending: true });
     return query.range((page - 1) * limit, page * limit - 1);
   };
 
-  // Repli sans marque/référence tant que le schéma Supabase n'est pas à jour
+  // Replis tant que le schéma Supabase n'est pas à jour : recherche simple,
+  // puis sans marque/référence
   let [{ data, error, count }, alertRes] = await Promise.all([
-    build(true),
+    build('norm'),
     supabase.from('products_list').select('id', { count: 'exact', head: true }).eq('in_alert', true),
   ]);
-  if (error) ({ data, error, count } = await build(false));
+  if (error) ({ data, error, count } = await build('brand'));
+  if (error) ({ data, error, count } = await build('basic'));
   if (error) throw fail(error.message);
   return { items: data || [], total: count || 0, page, limit, alertCount: alertRes.count || 0 };
 }
@@ -244,10 +259,12 @@ async function listMovements(q) {
   const limit = Math.min(Number(q.get('limit')) || 50, 200);
   const page = Math.max(Number(q.get('page')) || 1, 1);
 
-  const build = (table, withJoins) => {
+  const build = (table, withJoins, norm) => {
     let query = supabase.from(table).select('*', { count: 'exact' });
     const search = q.get('search');
-    if (search) {
+    if (search && norm) {
+      for (const w of searchWords(search)) query = query.ilike('search_text', `%${w}%`);
+    } else if (search) {
       const s = sanitizeSearch(search);
       if (s) query = query.ilike('product_name', `%${s}%`);
     }
@@ -262,8 +279,9 @@ async function listMovements(q) {
 
   // movements_list (avec catégorie/stock) ; repli sur la table brute si la
   // base n'a pas encore reçu la mise à jour du schéma
-  let { data, error, count } = await build('movements_list', true);
-  if (error) ({ data, error, count } = await build('movements', false));
+  let { data, error, count } = await build('movements_list', true, true);
+  if (error) ({ data, error, count } = await build('movements_list', true, false));
+  if (error) ({ data, error, count } = await build('movements', false, false));
   if (error) throw fail(error.message);
   return { items: data || [], total: count || 0, page, limit };
 }
