@@ -309,7 +309,10 @@ export default function Board() {
     overDock.current = !!dock || (!!zone && zone.height > 0 && !!p && p.y >= zone.top);
     if (dock) return [dock];
     if (overDock.current) return [];
-    const found = hits.length ? hits : rectIntersection(args);
+    // Souris / doigt : seule compte la colonne sous le pointeur. Entre deux
+    // colonnes, on garde la dernière visée (sinon la carte hésiterait entre
+    // les deux). Au clavier, il n'y a pas de pointeur : on se fie à la carte.
+    const found = p ? hits : rectIntersection(args);
     let over = found.find((c) => String(c.id).startsWith('t:'))?.id ?? found.find((c) => String(c.id).startsWith('col:'))?.id;
     if (over == null) return lastOver.current ? [{ id: lastOver.current }] : [];
     if (String(over).startsWith('col:')) {
