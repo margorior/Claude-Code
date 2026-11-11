@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Trash2, ScanBarcode, Image as ImageIcon, ImageOff } from 'lucide-react';
+import { Camera, Trash2, ScanBarcode, Image as ImageIcon, ImageOff, Plus, Check, X } from 'lucide-react';
 import { Modal, Field, ConfirmDialog, useToast, Spinner } from './ui';
 import { api, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
 import ScannerModal from './ScannerModal';
 import CameraModal from './CameraModal';
+import SuggestInput from './SuggestInput';
+import { searchWords, upperClean } from '../lib/text';
 
 // Seuls les téléphones/tablettes Android et Apple ouvrent l'appareil photo via
 // l'attribut capture ; sur PC (Windows…) il ouvre l'explorateur de fichiers.
@@ -36,7 +38,7 @@ async function resizeImage(file) {
   }
 }
 
-export default function ProductModal({ open, onClose, product, categories, zones, onSaved }) {
+export default function ProductModal({ open, onClose, product, categories, zones, onSaved, onRefsChanged }) {
   const { settings } = useAuth();
   const toast = useToast();
   const isEdit = !!product;
@@ -50,9 +52,24 @@ export default function ProductModal({ open, onClose, product, categories, zones
   const [photoPreview, setPhotoPreview] = useState(null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [form, setForm] = useState({});
+  const [names, setNames] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [newCat, setNewCat] = useState(null);
+  const [extraCats, setExtraCats] = useState([]);
+
+  // Noms et marques déjà saisis : proposés pendant la frappe
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    api('/api/products/suggest')
+      .then((d) => { if (alive) { setNames(d.names); setBrands(d.brands); } })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
+    setNewCat(null);
     setForm({
       name: product?.name || '',
       brand: product?.brand || '',
@@ -72,6 +89,31 @@ export default function ProductModal({ open, onClose, product, categories, zones
   }, [open, product]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const allCategories = [...categories, ...extraCats.filter((x) => !categories.some((c) => c.id === x.id))];
+
+  const brandKey = searchWords(form.brand).join('');
+  const shownBrands = brands.filter((b) => !brandKey || searchWords(b).join('').includes(brandKey));
+
+  const createCategory = async () => {
+    const name = String(newCat || '').trim();
+    if (!name) return setNewCat(null);
+    const same = allCategories.find((c) => searchWords(c.name).join('') === searchWords(name).join(''));
+    if (same) {
+      setForm((f) => ({ ...f, category_id: same.id }));
+      return setNewCat(null);
+    }
+    try {
+      const created = await api('/api/categories', { json: { name } });
+      setExtraCats((x) => [...x, { id: created.id, name }]);
+      setForm((f) => ({ ...f, category_id: created.id }));
+      setNewCat(null);
+      onRefsChanged?.();
+      toast(`Catégorie « ${name} » créée`);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
 
   const applyPhoto = async (f) => {
     const resized = await resizeImage(f);
@@ -171,16 +213,53 @@ export default function ProductModal({ open, onClose, product, categories, zones
 
           <div className="sm:col-span-2">
             <Field label="Nom du produit *">
-              <input className="input" required placeholder="ex. Câble 3G2,5 mm²" value={form.name || ''} onChange={set('name')} />
+              <SuggestInput
+                required
+                placeholder="ex. Câble 3G2,5 mm²"
+                options={names}
+                value={form.name || ''}
+                onChange={(v) => setForm((f) => ({ ...f, name: v }))}
+              />
             </Field>
           </div>
 
-          <Field label="Marque">
-            <input className="input" placeholder="ex. Legrand, Schneider…" value={form.brand || ''} onChange={set('brand')} />
+          <Field label="Marque" hint="Enregistrée en majuscules.">
+            <input className="input uppercase placeholder:normal-case" placeholder="ex. Legrand, Schneider…" value={form.brand || ''} onChange={set('brand')} />
           </Field>
 
-          <Field label="Référence">
-            <input className="input" placeholder="ex. LEG-099204" value={form.reference || ''} onChange={set('reference')} />
+          {/* Marques déjà saisies : un clic évite les fautes et les doublons */}
+          <div>
+            <span className="mb-1.5 block text-[13px] font-semibold text-slate-700">Marques déjà utilisées</span>
+            {brands.length === 0 ? (
+              <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-400">Les marques déjà saisies apparaîtront ici.</p>
+            ) : shownBrands.length === 0 ? (
+              <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-400">Nouvelle marque : elle sera ajoutée à la liste.</p>
+            ) : (
+              <div className="flex max-h-[5.75rem] flex-wrap gap-1.5 overflow-y-auto rounded-xl bg-slate-50 p-2">
+                {shownBrands.map((b) => {
+                  const selected = upperClean(form.brand) === b;
+                  return (
+                    <button
+                      key={b}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setForm((f) => ({ ...f, brand: b }))}
+                      className={`rounded-lg border px-2.5 py-1.5 text-xs font-bold transition ${
+                        selected
+                          ? 'border-brand-600 bg-brand-600 text-white'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-brand-400 hover:text-brand-700'
+                      }`}
+                    >
+                      {b}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <Field label="Référence" hint="Enregistrée en majuscules.">
+            <input className="input uppercase placeholder:normal-case" placeholder="ex. LEG-099204" value={form.reference || ''} onChange={set('reference')} />
           </Field>
 
           <Field label="Code-barres">
@@ -192,12 +271,41 @@ export default function ProductModal({ open, onClose, product, categories, zones
             </div>
           </Field>
 
-          <Field label="Catégorie">
-            <select className="input" value={form.category_id || ''} onChange={set('category_id')}>
-              <option value="">— Aucune —</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </Field>
+          <div>
+            <label htmlFor="product-category" className="mb-1.5 block text-[13px] font-semibold text-slate-700">Catégorie</label>
+            {newCat === null ? (
+              <div className="flex gap-2">
+                <select id="product-category" className="input" value={form.category_id || ''} onChange={set('category_id')}>
+                  <option value="">— Aucune —</option>
+                  {allCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <button type="button" className="btn-ghost shrink-0 !px-3" title="Créer une catégorie" aria-label="Créer une catégorie" onClick={() => setNewCat('')}>
+                  <Plus size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  id="product-category"
+                  className="input"
+                  autoFocus
+                  placeholder="Nom de la nouvelle catégorie"
+                  value={newCat}
+                  onChange={(e) => setNewCat(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); createCategory(); }
+                    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setNewCat(null); }
+                  }}
+                />
+                <button type="button" className="btn-primary shrink-0 !px-3" title="Créer" aria-label="Créer la catégorie" onClick={createCategory}>
+                  <Check size={18} />
+                </button>
+                <button type="button" className="btn-ghost shrink-0 !px-3" title="Annuler" aria-label="Annuler" onClick={() => setNewCat(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+            )}
+          </div>
 
           <Field label="Quantité *">
             <input className="input" type="number" step="any" min="0" required value={form.quantity} onChange={set('quantity')} />

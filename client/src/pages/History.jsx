@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Search, ScrollText, ArrowDownCircle, ArrowUpCircle, PlusCircle, Pencil, Trash2, DatabaseBackup, X } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { Spinner, EmptyState, Pagination } from '../components/ui';
+import { Spinner, EmptyState, Pagination, useToast } from '../components/ui';
+import ProductModal from '../components/ProductModal';
 
 const ACTIONS = {
   'entrée': { label: 'Entrée', icon: ArrowUpCircle, cls: 'bg-emerald-100 text-emerald-700' },
@@ -21,7 +22,11 @@ function fmtDate(iso) {
 const EMPTY_FILTERS = { user: '', action: '', category: '', stock: '' };
 
 export default function History() {
-  const { settings } = useAuth();
+  const { settings, isManager } = useAuth();
+  const toast = useToast();
+  const [zones, setZones] = useState([]);
+  const [editing, setEditing] = useState(null);
+  const [opening, setOpening] = useState(null);
   const [items, setItems] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -31,15 +36,28 @@ export default function History() {
   const [categories, setCategories] = useState([]);
   const limit = 50;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [u, c] = await Promise.all([api('/api/movements/users'), api('/api/categories')]);
-        setUsers(u.users);
-        setCategories(c.items);
-      } catch {}
-    })();
+  const loadRefs = useCallback(async () => {
+    try {
+      const [u, c, z] = await Promise.all([api('/api/movements/users'), api('/api/categories'), api('/api/zones')]);
+      setUsers(u.users);
+      setCategories(c.items);
+      setZones(z.items);
+    } catch {}
   }, []);
+
+  useEffect(() => { loadRefs(); }, [loadRefs]);
+
+  // Un clic sur une ligne ouvre la fiche du produit concerné
+  const openProduct = async (m) => {
+    if (opening) return;
+    setOpening(m.id);
+    try {
+      setEditing(await api(`/api/products/${m.product_id}`));
+    } catch (err) {
+      toast(err.status === 404 ? "Ce produit a été supprimé : il n'y a plus de fiche à ouvrir." : err.message, 'error');
+    }
+    setOpening(null);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -118,10 +136,16 @@ export default function History() {
           {items.map((m) => {
             const a = ACTIONS[m.action] || ACTIONS['modification'];
             const Icon = a.icon;
+            const clickable = isManager && m.product_id != null && m.action !== 'suppression';
+            const Row = clickable ? 'button' : 'div';
             return (
-              <div key={m.id} className="flex items-center gap-3.5 px-4 py-3">
+              <Row
+                key={m.id}
+                {...(clickable ? { type: 'button', onClick: () => openProduct(m), title: 'Ouvrir la fiche du produit' } : {})}
+                className={`flex w-full items-center gap-3.5 px-4 py-3 text-left ${clickable ? 'transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none' : ''}`}
+              >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${a.cls}`}>
-                  <Icon size={19} />
+                  {opening === m.id ? <Spinner className="h-5 w-5" /> : <Icon size={19} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-slate-800">{m.product_name}</p>
@@ -141,13 +165,23 @@ export default function History() {
                   <p className="text-[13px] font-semibold text-slate-600">{m.user_name}</p>
                   <p className="text-xs text-slate-400">{fmtDate(m.created_at)}</p>
                 </div>
-              </div>
+              </Row>
             );
           })}
         </div>
       )}
 
       <Pagination page={page} total={total} limit={limit} onPage={setPage} />
+
+      <ProductModal
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        product={editing}
+        categories={categories}
+        zones={zones}
+        onSaved={() => { load(); loadRefs(); window.dispatchEvent(new Event('stock-changed')); }}
+        onRefsChanged={loadRefs}
+      />
     </div>
   );
 }

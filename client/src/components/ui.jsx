@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { openLayer, hasLayers } from '../lib/layers';
 
 /* ---------------------------------------------------------------- Toasts */
 const ToastContext = createContext(null);
@@ -37,17 +38,23 @@ export function ToastProvider({ children }) {
 export const useToast = () => useContext(ToastContext);
 
 /* ---------------------------------------------------------------- Modal */
-export function Modal({ open, onClose, title, children, wide = false }) {
+// Fermeture par le bouton retour / Échap : uniquement la fenêtre du dessus
+export function useLayer(open, onClose) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
+    const release = openLayer(() => closeRef.current());
     document.body.style.overflow = 'hidden';
     return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      release();
+      if (!hasLayers()) document.body.style.overflow = '';
     };
-  }, [open, onClose]);
+  }, [open]);
+}
+
+export function Modal({ open, onClose, title, children, wide = false }) {
+  useLayer(open, onClose);
 
   if (!open) return null;
   return (

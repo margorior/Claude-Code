@@ -223,10 +223,12 @@ export default function Dashboard({ alertsOnly = false }) {
             </select>
             <select className="input" value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
               <option value="">Catégories</option>
+              <option value="none">Aucune catégorie</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <select className="input" value={filters.zone} onChange={(e) => setFilters({ ...filters, zone: e.target.value })}>
               <option value="">Zones</option>
+              <option value="none">Aucune zone</option>
               {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
             </select>
             <select className="input" value={filters.brand} onChange={(e) => setFilters({ ...filters, brand: e.target.value })}>
@@ -284,6 +286,7 @@ export default function Dashboard({ alertsOnly = false }) {
         categories={categories}
         zones={zones}
         onSaved={() => { refresh(); loadRefs(); }}
+        onRefsChanged={loadRefs}
       />
       <AdjustModal
         open={adjust.open}

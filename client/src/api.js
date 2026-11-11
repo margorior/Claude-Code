@@ -1,6 +1,7 @@
 // Couche de données : conserve la même interface `api('/api/…')` que
 // l'ancienne version serveur, mais parle directement à Supabase.
 import { supabase, usernameToEmail, photoUrl } from './lib/supabase';
+import { searchWords, upperClean, naturalCompare } from './lib/text';
 
 export { photoUrl };
 
@@ -89,17 +90,6 @@ function sanitizeSearch(s) {
   return String(s).replace(/[,()]/g, ' ').trim();
 }
 
-// Même normalisation que public.search_norm (schema.sql), mot par mot
-function searchWords(s) {
-  return String(s)
-    .toLowerCase()
-    .replace(/œ/g, 'oe').replace(/æ/g, 'ae').replace(/²/g, '2').replace(/³/g, '3')
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .split(/\s+/)
-    .map((w) => w.replace(/[^a-z0-9]/g, ''))
-    .filter(Boolean);
-}
-
 async function listProducts(q) {
   const limit = Math.min(Number(q.get('limit')) || 50, 200);
   const page = Math.max(Number(q.get('page')) || 1, 1);
@@ -120,10 +110,15 @@ async function listProducts(q) {
           : query.or(`name.ilike.%${s}%,barcode.ilike.%${s}%`);
       }
     }
-    if (q.get('category')) query = query.eq('category_id', Number(q.get('category')));
-    if (q.get('zone')) query = query.eq('zone_id', Number(q.get('zone')));
+    // « none » = les produits sans catégorie / sans zone
+    for (const [param, column] of [['category', 'category_id'], ['zone', 'zone_id']]) {
+      const v = q.get(param);
+      if (v === 'none') query = query.is(column, null);
+      else if (v) query = query.eq(column, Number(v));
+    }
     if (q.get('stock')) query = query.eq('stock', Number(q.get('stock')));
-    if (mode !== 'basic' && q.get('brand')) query = query.eq('brand', q.get('brand'));
+    // Marque : sans tenir compte des majuscules/minuscules
+    if (mode !== 'basic' && q.get('brand')) query = query.ilike('brand', q.get('brand').replace(/[\\%_]/g, '\\$&'));
     if (q.get('alertsOnly') === '1') query = query.eq('in_alert', true);
     query = query.order(sort, { ascending: asc, nullsFirst: asc }).order('id', { ascending: true });
     return query.range((page - 1) * limit, page * limit - 1);
@@ -141,10 +136,40 @@ async function listProducts(q) {
   return { items: data || [], total: count || 0, page, limit, alertCount: alertRes.count || 0 };
 }
 
+// Noms de produits et marques déjà saisis (aide à la saisie, anti-doublons)
+async function productSuggestions() {
+  const names = new Map();
+  const brands = new Map();
+  const step = 1000;
+  for (let from = 0; ; from += step) {
+    let { data, error } = await supabase.from('products').select('name, brand').order('id').range(from, from + step - 1);
+    if (error) ({ data, error } = await supabase.from('products').select('name').order('id').range(from, from + step - 1));
+    if (error) break;
+    for (const r of data || []) {
+      const name = String(r.name || '').trim();
+      const key = searchWords(name).join('');
+      if (key && !names.has(key)) names.set(key, name);
+      const brand = upperClean(r.brand);
+      if (brand) brands.set(brand, (brands.get(brand) || 0) + 1);
+    }
+    if (!data || data.length < step) break;
+  }
+  return {
+    names: [...names.values()].sort(naturalCompare),
+    brands: [...brands.keys()].sort(naturalCompare),
+  };
+}
+
 async function productBrands() {
-  const { data, error } = await supabase.from('product_brands').select('*').order('brand');
-  if (error) return { brands: [] };
-  return { brands: (data || []).map((r) => r.brand) };
+  return { brands: (await productSuggestions()).brands };
+}
+
+async function getProduct(id) {
+  let { data, error } = await supabase.from('products_list').select('*').eq('id', id).maybeSingle();
+  if (error) ({ data, error } = await supabase.from('products').select('*').eq('id', id).maybeSingle());
+  if (error) throw fail(error.message);
+  if (!data) throw fail("Ce produit n'existe plus", 404);
+  return data;
 }
 
 async function uploadPhoto(file) {
@@ -162,8 +187,8 @@ function removePhotoQuietly(path) {
 function parseProductForm(fd) {
   return {
     name: String(fd.get('name') || '').trim(),
-    brand: String(fd.get('brand') || '').trim() || null,
-    reference: String(fd.get('reference') || '').trim() || null,
+    brand: upperClean(fd.get('brand')) || null,
+    reference: upperClean(fd.get('reference')) || null,
     barcode: String(fd.get('barcode') || '').trim() || null,
     unit: String(fd.get('unit') || 'pièce').trim() || 'pièce',
     quantity: Math.max(0, Number(fd.get('quantity')) || 0),
@@ -233,7 +258,11 @@ async function listRef(table) {
     .select('*, products(count)')
     .order('name', { ascending: true });
   if (error) throw fail(error.message);
-  return { items: (data || []).map((r) => ({ id: r.id, name: r.name, product_count: r.products?.[0]?.count || 0 })) };
+  return {
+    items: (data || [])
+      .map((r) => ({ id: r.id, name: r.name, product_count: r.products?.[0]?.count || 0 }))
+      .sort((a, b) => naturalCompare(a.name, b.name)),
+  };
 }
 
 async function createRef(table, name, label) {
@@ -497,11 +526,13 @@ export async function api(path, options = {}) {
   }
   if (seg[0] === 'products') {
     if (seg[1] === 'brands') return productBrands();
+    if (seg[1] === 'suggest') return productSuggestions();
     if (seg.length === 1) return method === 'POST' ? createProduct(body) : listProducts(q);
     if (seg[2] === 'adjust') return supabase.rpc('adjust_quantity', { pid: Number(seg[1]), delta: Number(body.delta) })
       .then(({ data, error }) => { if (error) throw fail(error.message); return { ok: true, quantity: data }; });
     if (method === 'PUT') return updateProduct(Number(seg[1]), body);
     if (method === 'DELETE') return deleteProduct(Number(seg[1]));
+    if (method === 'GET') return getProduct(Number(seg[1]));
   }
   if (seg[0] === 'categories' || seg[0] === 'zones') {
     const label = seg[0] === 'categories' ? 'Catégorie' : 'Zone';
