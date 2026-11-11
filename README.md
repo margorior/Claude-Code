@@ -1,6 +1,6 @@
 # ⚡ Gestion de Stock — matériel électrique
 
-Application web complète pour gérer **deux stocks** de matériel, avec comptes utilisateurs à trois niveaux, alertes de stock bas, historique des mouvements, sauvegarde/restauration et mode application mobile (PWA).
+Application web complète pour gérer **trois stocks** de matériel et **répartir les tâches** de l'équipe, avec comptes utilisateurs à quatre niveaux, alertes de stock bas, historique des mouvements, sauvegarde/restauration et mode application mobile (PWA).
 
 **100 % gratuite à héberger** : le site est servi par **GitHub Pages**, les données et les comptes par **Supabase** (offre gratuite).
 
@@ -8,10 +8,17 @@ Application web complète pour gérer **deux stocks** de matériel, avec comptes
 
 ## ✨ Fonctionnalités
 
-- **3 niveaux d'accès**
-  - 👑 **Administrateur** : tout faire — valider les inscriptions, gérer les rôles, les paramètres, les sauvegardes
-  - 🔧 **Gestionnaire** : gérer le stock (produits, catégories, zones)
-  - 👁️ **Lecteur** : consultation seule
+- **4 niveaux d'accès** (seul un administrateur peut changer le niveau de quelqu'un)
+  - 👑 **Administrateur** : tout faire — valider les inscriptions, gérer les rôles, les paramètres, les sauvegardes, créer et attribuer les tâches
+  - 🔧 **Gestionnaire** : gérer le stock (produits, catégories, zones), voir ses tâches
+  - 👁️ **Lecteur** : stock en consultation seule, voir ses tâches
+  - 📋 **Utilisateur** : ne voit que ses tâches (pas le stock)
+- **Onglet Tâches** (noir et jaune)
+  - **Tableau** façon Trello : une colonne « À attribuer », une colonne par personne, une colonne « Terminées » ; on attribue une tâche en la **glissant** sur une personne (souris, clavier, ou appui long sur téléphone)
+  - **Fiche** d'une tâche : description, check-list, photos, dates, lieu
+  - **Calendrier** mois / semaine / jour ; l'administrateur voit tout, chacun voit ses tâches
+  - **Mes tâches** : boutons « En cours » et « Terminer », notification à chaque nouvelle tâche
+  - À la **clôture** d'une tâche, ses photos sont supprimées
 - **Inscription protégée** : un mot de passe d'accès (défini par l'admin) est demandé pour créer un compte, puis l'admin valide chaque compte dans l'onglet *Utilisateurs* — le tout premier compte créé devient automatiquement administrateur
 - **Produits** : photo, nom, unité (pièce, mètre, …), quantité, catégorie, zone de rangement, stock 1 ou 2, seuil d'alerte, code-barres
 - **Boutons + / −** pour prendre ou remettre du matériel en deux clics

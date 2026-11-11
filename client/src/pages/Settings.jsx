@@ -78,7 +78,7 @@ export default function Settings() {
     setImporting(true);
     try {
       const r = await importBackup(importFile);
-      toast(`Sauvegarde restaurée (${r.products} produits)`);
+      toast(`Sauvegarde restaurée (${r.products} produits${r.tasks != null ? `, ${r.tasks} tâches` : ''})`);
       setImportFile(null);
       window.dispatchEvent(new Event('stock-changed'));
       setTimeout(() => window.location.reload(), 1200);
@@ -130,7 +130,7 @@ export default function Settings() {
             <Section
               icon={DatabaseBackup}
               title="Sauvegarde & migration"
-              subtitle="Téléchargez une sauvegarde complète (produits, photos, historique) ou restaurez-la — par exemple sur un nouveau projet Supabase"
+              subtitle="Un seul fichier .zip contient tout : produits, tâches, historique et toutes les photos. Téléchargez-le, ou restaurez-le — par exemple sur un nouveau projet Supabase"
             >
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button className="btn-primary flex-1 !py-3" onClick={doExport} disabled={exporting}>
@@ -148,7 +148,8 @@ export default function Settings() {
                 </button>
               </div>
               <p className="mt-3 text-xs text-slate-400">
-                ⚠️ L'import remplace <strong>tout le stock actuel</strong> (produits, catégories, zones, historique, paramètres) par le contenu de la sauvegarde.
+                ⚠️ L'import remplace <strong>tout le contenu actuel</strong> (produits, catégories, zones, historique, paramètres, tâches) par celui de la sauvegarde.
+                Une sauvegarde plus ancienne, sans tâches, laisse les tâches actuelles en place.
                 Les comptes utilisateurs, eux, restent gérés par Supabase et ne sont pas touchés.
               </p>
             </Section>

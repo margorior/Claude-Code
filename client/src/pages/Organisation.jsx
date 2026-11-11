@@ -71,7 +71,7 @@ function CrudSection({ endpoint, title, icon: Icon, singular, hint }) {
       ) : items.length === 0 ? (
         <EmptyState icon={Icon} title={`Aucune ${singular.toLowerCase()}`} />
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
           {items.map((it) => (
             <li key={it.id} className="flex items-center gap-3 px-5 py-3">
               <span className="flex-1 font-medium text-slate-700">{it.name}</span>
@@ -137,7 +137,7 @@ export default function Organisation() {
       <p className="mb-5 text-sm text-slate-500">Organisez votre matériel par catégorie et par emplacement de rangement.</p>
       <div className="grid gap-4 lg:grid-cols-2">
         <CrudSection endpoint="categories" title="Catégories" singular="Catégorie" icon={Tags} hint="ex. câbles, prises, interrupteurs…" />
-        <CrudSection endpoint="zones" title="Zones de rangement" singular="Zone" icon={MapPin} hint="ex. étagère A, réserve…" />
+        <CrudSection endpoint="zones" title="Zones de rangement" singular="Zone" icon={MapPin} hint="Numérotées de 1 à 200" />
       </div>
     </div>
   );

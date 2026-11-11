@@ -39,9 +39,11 @@ export function AuthProvider({ children }) {
 
   const isManager = user && (user.role === 'admin' || user.role === 'gestionnaire');
   const isAdmin = user && user.role === 'admin';
+  // Niveau « utilisateur » : ne voit que ses tâches, pas le stock
+  const tasksOnly = !!user && user.role === 'utilisateur';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isManager, isAdmin, settings, refreshSettings }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isManager, isAdmin, tasksOnly, settings, refreshSettings }}>
       {children}
     </AuthContext.Provider>
   );

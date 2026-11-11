@@ -1,14 +1,24 @@
 // Couche de données : conserve la même interface `api('/api/…')` que
 // l'ancienne version serveur, mais parle directement à Supabase.
-import { supabase, usernameToEmail, photoUrl } from './lib/supabase';
+import { supabase, usernameToEmail, photoUrl, fileUrl } from './lib/supabase';
 import { searchWords, upperClean, naturalCompare } from './lib/text';
 
 export { photoUrl };
 
-function fail(message, status = 400) {
+export function fail(message, status = 400) {
   const err = new Error(message);
   err.status = status;
   return err;
+}
+
+// Message affiché tant que la base Supabase n'a pas reçu la dernière version
+// du fichier supabase/schema.sql
+export const SCHEMA_HINT =
+  "La base de données n'est pas encore à jour : collez le fichier supabase/schema.sql dans Supabase (SQL Editor → Run), puis rechargez la page.";
+
+// Table, colonne ou fonction absente : la base n'a pas reçu la mise à jour
+export function isSchemaError(error) {
+  return ['42P01', '42703', '42883', 'PGRST202', 'PGRST204', 'PGRST205'].includes(error?.code);
 }
 
 function frenchAuthError(error) {
@@ -94,13 +104,14 @@ async function listProducts(q) {
   const limit = Math.min(Number(q.get('limit')) || 50, 200);
   const page = Math.max(Number(q.get('page')) || 1, 1);
   const sortMap = { name: 'name', quantity: 'quantity', updated: 'updated_at', category: 'category_name', zone: 'zone_name' };
-  const sort = sortMap[q.get('sort')] || 'name';
   const asc = q.get('dir') !== 'desc';
 
   const build = (mode) => {
     let query = supabase.from('products_list').select('*', { count: 'exact' });
+    // zone_sort range les zones numérotées dans l'ordre 1, 2 … 10 (et non 1, 10, 2)
+    const sort = q.get('sort') === 'zone' && mode === 'full' ? 'zone_sort' : sortMap[q.get('sort')] || 'name';
     const search = q.get('search');
-    if (search && mode === 'norm') {
+    if (search && (mode === 'full' || mode === 'norm')) {
       for (const w of searchWords(search)) query = query.ilike('search_text', `%${w}%`);
     } else if (search) {
       const s = sanitizeSearch(search);
@@ -124,14 +135,15 @@ async function listProducts(q) {
     return query.range((page - 1) * limit, page * limit - 1);
   };
 
-  // Replis tant que le schéma Supabase n'est pas à jour : recherche simple,
-  // puis sans marque/référence
+  // Replis tant que le schéma Supabase n'est pas à jour : sans tri numérique
+  // des zones, puis recherche simple, puis sans marque/référence
   let [{ data, error, count }, alertRes] = await Promise.all([
-    build('norm'),
+    build('full'),
     supabase.from('products_list').select('id', { count: 'exact', head: true }).eq('in_alert', true),
   ]);
-  if (error) ({ data, error, count } = await build('brand'));
-  if (error) ({ data, error, count } = await build('basic'));
+  for (const mode of ['norm', 'brand', 'basic']) {
+    if (error) ({ data, error, count } = await build(mode));
+  }
   if (error) throw fail(error.message);
   return { items: data || [], total: count || 0, page, limit, alertCount: alertRes.count || 0 };
 }
@@ -335,7 +347,7 @@ async function listUsers() {
 async function updateUser(id, patch) {
   const { data: { session } } = await supabase.auth.getSession();
   const upd = {};
-  if (patch.role && ['admin', 'gestionnaire', 'lecteur'].includes(patch.role)) {
+  if (patch.role && ['admin', 'gestionnaire', 'lecteur', 'utilisateur'].includes(patch.role)) {
     if (id === session?.user?.id && patch.role !== 'admin')
       throw fail('Vous ne pouvez pas retirer votre propre rôle admin');
     upd.role = patch.role;
@@ -345,7 +357,7 @@ async function updateUser(id, patch) {
     upd.status = patch.status;
   }
   const { error } = await supabase.from('profiles').update(upd).eq('id', id);
-  if (error) throw fail(error.message);
+  if (error) throw fail(error.code === '23514' ? SCHEMA_HINT : error.message);
   return { ok: true };
 }
 
@@ -462,25 +474,41 @@ export async function exportExcel(settings) {
 
 export async function exportBackup() {
   const { default: JSZip } = await import('jszip');
-  const [categories, zones, products, movements, settingsRows] = await Promise.all([
+  const [categories, zones, products, movements, settingsRows, tasks] = await Promise.all([
     fetchAll('categories'), fetchAll('zones'), fetchAll('products'), fetchAll('movements'),
     supabase.from('settings').select('*').then((r) => r.data || []),
+    // Tâches : absentes tant que la base n'a pas reçu la mise à jour
+    fetchAll('tasks').catch(() => null),
   ]);
   const zip = new JSZip();
   zip.file('data.json', JSON.stringify({
-    version: 2, exported_at: new Date().toISOString(),
+    version: 3, exported_at: new Date().toISOString(),
     categories, zones, products, movements, settings: settingsRows,
+    ...(tasks ? { tasks } : {}),
   }, null, 2));
-  for (const p of products) {
-    if (!p.photo) continue;
-    try {
-      const res = await fetch(photoUrl(p.photo));
-      if (res.ok) zip.file(`photos/${p.photo}`, await res.blob());
-    } catch {}
-  }
+
+  // Toutes les images : photos des produits + photos des tâches en cours
+  const wanted = [
+    ...products.filter((p) => p.photo).map((p) => ['photos', p.photo]),
+    ...(tasks || []).flatMap((t) => (t.photos || []).map((path) => ['task-photos', path])),
+  ];
+  let next = 0;
+  const worker = async () => {
+    while (next < wanted.length) {
+      const [bucket, path] = wanted[next++];
+      try {
+        const res = await fetch(fileUrl(bucket, path));
+        if (res.ok) zip.file(`${bucket}/${path}`, await res.blob());
+      } catch {}
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+
   const blob = await zip.generateAsync({ type: 'blob' });
   download(blob, `sauvegarde-stock-${new Date().toISOString().slice(0, 10)}.zip`);
 }
+
+const IMAGE_TYPES = { webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif' };
 
 export async function importBackup(file) {
   const { default: JSZip } = await import('jszip');
@@ -497,15 +525,22 @@ export async function importBackup(file) {
       categories: dump.categories || [], zones: dump.zones || [],
       products: dump.products || [], movements: dump.movements || [],
       settings: dump.settings || [],
+      // Les sauvegardes d'avant les tâches n'en contiennent pas : dans ce cas
+      // les tâches actuelles ne sont pas touchées
+      ...(Array.isArray(dump.tasks) ? { tasks: dump.tasks } : {}),
     },
   });
   if (error) throw fail('Échec de la restauration : ' + error.message);
-  const photoFiles = Object.keys(zip.files).filter((n) => n.startsWith('photos/') && !zip.files[n].dir);
-  for (const name of photoFiles) {
-    const blob = await zip.file(name).async('blob');
-    await supabase.storage.from('photos').upload(name.replace('photos/', ''), blob, { upsert: true });
+  for (const bucket of ['photos', 'task-photos']) {
+    const prefix = `${bucket}/`;
+    const names = Object.keys(zip.files).filter((n) => n.startsWith(prefix) && !zip.files[n].dir);
+    for (const name of names) {
+      const blob = await zip.file(name).async('blob');
+      const contentType = IMAGE_TYPES[name.split('.').pop().toLowerCase()] || 'application/octet-stream';
+      await supabase.storage.from(bucket).upload(name.slice(prefix.length), blob, { upsert: true, contentType });
+    }
   }
-  return { ok: true, products: dump.products.length };
+  return { ok: true, products: dump.products.length, tasks: Array.isArray(dump.tasks) ? dump.tasks.length : null };
 }
 
 /* ------------------------------------------------------------ DISPATCHER */

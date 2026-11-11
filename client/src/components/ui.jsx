@@ -22,7 +22,7 @@ export function ToastProvider({ children }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-pop ${
+            className={`pointer-events-auto flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-pop ring-1 ring-white/20 ${
               t.type === 'error' ? 'bg-red-600' : 'bg-slate-900'
             }`}
           >

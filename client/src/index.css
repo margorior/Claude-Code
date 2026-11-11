@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -40,4 +40,52 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   @apply rounded-full bg-slate-300;
+}
+
+/* ------------------------------------------------------------------ Tâches
+   Onglet Tâches : thème noir et jaune */
+body.tasks-dark {
+  background: #111112;
+}
+.tasks-scope {
+  color-scheme: dark;
+}
+.tasks-scope ::-webkit-scrollbar-thumb {
+  background: #3a3a40;
+}
+.tasks-scope :focus-visible {
+  outline: 2px solid #ffd60a;
+  outline-offset: 2px;
+}
+
+.t-input {
+  @apply w-full rounded-xl border border-ink-600 bg-ink-900 px-3.5 py-2.5 text-sm text-ink-50 outline-none transition
+    placeholder:text-ink-300 focus:border-sun focus:ring-2 focus:ring-sun/25;
+}
+.t-btn {
+  @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition
+    disabled:cursor-not-allowed disabled:opacity-50 active:scale-[.98];
+}
+.t-btn-sun {
+  @apply t-btn bg-sun text-ink-900 hover:bg-sun-300;
+}
+.t-btn-line {
+  @apply t-btn border border-ink-600 bg-transparent text-ink-50 hover:bg-ink-750;
+}
+.t-label {
+  @apply text-[13px] font-bold text-ink-300;
+}
+
+/* Bandes « chantier » en haut de la colonne des tâches à attribuer */
+.hazard {
+  background: repeating-linear-gradient(-45deg, #ffd60a 0 14px, #111112 14px 28px);
+}
+
+/* Cartes déplaçables : un appui long les attrape, sans sélectionner le texte
+   ni ouvrir le menu du téléphone */
+.drag-card {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }

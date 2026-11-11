@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { ToastProvider, Spinner } from './components/ui';
@@ -9,6 +10,21 @@ import Organisation from './pages/Organisation';
 import History from './pages/History';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+
+// L'onglet Tâches n'est téléchargé que lorsqu'on l'ouvre
+const Board = lazy(() => import('./tasks/Board'));
+const MyTasks = lazy(() => import('./tasks/MyTasks'));
+const CalendarPage = lazy(() => import('./tasks/CalendarPage'));
+
+function TasksPage({ children }) {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-24 text-sun"><Spinner className="h-8 w-8" /></div>}>
+      {children}
+    </Suspense>
+  );
+}
+
+const MY_TASKS = '/taches/miennes';
 
 function Protected({ children, adminOnly = false }) {
   const { user, loading, isAdmin } = useAuth();
@@ -22,6 +38,19 @@ function Protected({ children, adminOnly = false }) {
   if (!user) return <Navigate to="/login" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
   return children;
+}
+
+// Pages du stock : le niveau « utilisateur » n'y a pas accès, il est renvoyé
+// vers ses tâches
+function Stock({ children }) {
+  const { tasksOnly } = useAuth();
+  return tasksOnly ? <Navigate to={MY_TASKS} replace /> : children;
+}
+
+// Le tableau qui répartit les tâches est réservé à l'administrateur
+function AdminBoard() {
+  const { isAdmin } = useAuth();
+  return isAdmin ? <TasksPage><Board /></TasksPage> : <Navigate to={MY_TASKS} replace />;
 }
 
 export default function App() {
@@ -46,10 +75,13 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route element={<Protected><Layout /></Protected>}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/alertes" element={<Dashboard alertsOnly />} />
-            <Route path="/organisation" element={<Organisation />} />
-            <Route path="/historique" element={<History />} />
+            <Route path="/" element={<Stock><Dashboard /></Stock>} />
+            <Route path="/alertes" element={<Stock><Dashboard alertsOnly /></Stock>} />
+            <Route path="/organisation" element={<Stock><Organisation /></Stock>} />
+            <Route path="/historique" element={<Stock><History /></Stock>} />
+            <Route path="/taches" element={<AdminBoard />} />
+            <Route path={MY_TASKS} element={<TasksPage><MyTasks /></TasksPage>} />
+            <Route path="/taches/calendrier" element={<TasksPage><CalendarPage /></TasksPage>} />
             <Route path="/utilisateurs" element={<Protected adminOnly><Users /></Protected>} />
             <Route path="/parametres" element={<Settings />} />
           </Route>

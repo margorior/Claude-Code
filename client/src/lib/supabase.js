@@ -15,10 +15,14 @@ export const configured = BASE_URL.startsWith('https://') && KEY.length > 20 && 
 
 export const supabase = configured ? createClient(BASE_URL, KEY) : null;
 
-export function photoUrl(path) {
+// Adresse publique d'un fichier : dossier « photos » (produits) ou
+// « task-photos » (photos des tâches)
+export function fileUrl(bucket, path) {
   if (!path) return null;
-  return `${BASE_URL}/storage/v1/object/public/photos/${path}`;
+  return `${BASE_URL}/storage/v1/object/public/${bucket}/${path}`;
 }
+
+export const photoUrl = (path) => fileUrl('photos', path);
 
 // Les comptes utilisent un identifiant simple ; Supabase exige un email.
 export function usernameToEmail(username) {

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { UsersRound, Check, Trash2, ShieldCheck, Wrench, Eye, Clock, Ban, RotateCcw } from 'lucide-react';
+import { UsersRound, Check, Trash2, ShieldCheck, Wrench, Eye, Clock, Ban, RotateCcw, ListTodo } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { ConfirmDialog, useToast, Spinner, EmptyState } from '../components/ui';
 
 const ROLES = [
-  { value: 'admin', label: 'Administrateur', icon: ShieldCheck, desc: 'Tous les droits' },
-  { value: 'gestionnaire', label: 'Gestionnaire', icon: Wrench, desc: 'Gère le stock' },
-  { value: 'lecteur', label: 'Lecteur', icon: Eye, desc: 'Lecture seule' },
+  { value: 'admin', label: 'Administrateur', icon: ShieldCheck, desc: 'Tous les droits : stock, tâches, comptes' },
+  { value: 'gestionnaire', label: 'Gestionnaire', icon: Wrench, desc: 'Gère le stock, voit ses tâches' },
+  { value: 'lecteur', label: 'Lecteur', icon: Eye, desc: 'Stock en lecture seule, voit ses tâches' },
+  { value: 'utilisateur', label: 'Utilisateur', icon: ListTodo, desc: 'Ne voit que ses tâches' },
 ];
 
 export default function Users() {
@@ -67,7 +68,7 @@ export default function Users() {
   return (
     <div>
       <h1 className="mb-1 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">Utilisateurs</h1>
-      <p className="mb-5 text-sm text-slate-500">Validez les nouvelles inscriptions et gérez les rôles d'accès.</p>
+      <p className="mb-5 text-sm text-slate-500">Validez les nouvelles inscriptions et choisissez le niveau d'accès de chacun. Seul un administrateur peut changer un niveau.</p>
 
       {pending.length > 0 && (
         <div className="card mb-4 overflow-hidden border-amber-200">
@@ -105,7 +106,7 @@ export default function Users() {
         ) : (
           <ul className="divide-y divide-slate-100">
             {others.map((u) => {
-              const role = ROLES.find((r) => r.value === u.role);
+              const role = ROLES.find((r) => r.value === u.role) || ROLES[2];
               const Icon = role.icon;
               const disabled = u.status === 'disabled';
               return (
