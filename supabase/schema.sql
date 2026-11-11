@@ -318,13 +318,14 @@ drop policy if exists tasks_delete on public.tasks;
 create policy tasks_delete on public.tasks for delete
   using (public.is_admin());
 
--- Mise à jour en direct des écrans (nouvelle tâche, changement de statut…)
+-- Mise à jour en direct des écrans (nouvelle tâche, changement de statut…).
+-- Facultatif : si ce réglage échoue, l'appli se met quand même à jour toute
+-- seule, un peu moins vite.
 do $$
 begin
   alter publication supabase_realtime add table public.tasks;
 exception
-  when duplicate_object then null;
-  when undefined_object then null;
+  when others then null;
 end $$;
 
 -- --------------------------------------------------------------- SÉCURITÉ
