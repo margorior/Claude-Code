@@ -67,7 +67,8 @@ function Shell() {
   // (Utilisateurs, Paramètres) gardent le menu de la partie d'où l'on vient.
   const onTasks = pathname.startsWith('/taches');
   const section = tasksOnly || onTasks ? 'tasks' : STOCK_PATHS.includes(pathname) ? 'stock' : lastSection;
-  const theme = THEMES[section];
+  // Même menu noir et jaune dans les deux parties de l'appli
+  const theme = THEMES.tasks;
   useEffect(() => { setLastSection(section); }, [section]);
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
@@ -215,14 +216,14 @@ function Shell() {
 
   const logo = (
     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${theme.logo}`}>
-      <Zap size={18} className={section === 'tasks' ? 'text-sun' : 'text-amber-300'} fill="currentColor" />
+      <Zap size={18} className="text-sun" fill="currentColor" />
     </div>
   );
 
   return (
     <div className="min-h-screen lg:pl-64">
       {/* Menu latéral (ordinateur) */}
-      <aside className={`fixed inset-y-0 left-0 z-40 hidden w-64 flex-col px-4 py-5 lg:flex ${theme.bar} ${section === 'tasks' ? 'border-r border-ink-700' : ''}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 hidden w-64 flex-col px-4 py-5 lg:flex ${theme.bar} border-r border-ink-700`}>
         <div className="flex items-center gap-2.5 px-2">
           {logo}
           <span className="text-lg font-extrabold tracking-tight text-white">Gestion Électricité</span>
@@ -233,7 +234,7 @@ function Shell() {
       </aside>
 
       {/* Barre du haut (téléphone) */}
-      <header className={`sticky top-0 z-40 flex h-14 items-center justify-between gap-3 px-3 lg:hidden ${theme.bar} ${section === 'tasks' ? 'border-b border-ink-700' : ''}`}>
+      <header className={`sticky top-0 z-40 flex h-14 items-center justify-between gap-3 px-3 lg:hidden ${theme.bar} border-b border-ink-700`}>
         <div className="flex min-w-0 items-center gap-2">
           {logo}
           {tasksOnly && <span className="truncate font-extrabold text-white">Mes tâches</span>}

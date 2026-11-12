@@ -8,18 +8,19 @@ export default {
         display: ['"Space Grotesk"', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Couleur principale de l'appli : noir et jaune (clairs = jaunes, foncés = noirs)
         brand: {
-          50: '#eef4ff',
-          100: '#dae6ff',
-          200: '#bdd2ff',
-          300: '#90b4ff',
-          400: '#5b8bfc',
-          500: '#3663f5',
-          600: '#2347ea',
-          700: '#1b35d7',
-          800: '#1d2eae',
-          900: '#1d2c89',
-          950: '#161d53',
+          50: '#FFFBE0',
+          100: '#FFF3B0',
+          200: '#FFE566',
+          300: '#FFD60A',
+          400: '#FFD60A',
+          500: '#FFD60A',
+          600: '#111112',
+          700: '#000000',
+          800: '#1A1A1C',
+          900: '#111112',
+          950: '#0A0A0A',
         },
         // Onglet Tâches : noir et jaune
         ink: {

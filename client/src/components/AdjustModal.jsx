@@ -74,7 +74,7 @@ export default function AdjustModal({ open, onClose, product, direction, onSaved
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
-        <button className={`${isOut ? 'btn-danger' : 'btn-primary !bg-emerald-600 hover:!bg-emerald-700'} mt-4 w-full !py-3`} disabled={busy}>
+        <button className={`${isOut ? 'btn-danger' : 'btn-primary !bg-emerald-600 !text-white hover:!bg-emerald-700'} mt-4 w-full !py-3`} disabled={busy}>
           {busy ? <Spinner className="h-5 w-5" /> : isOut ? `Retirer ${amount || ''} ${product.unit}` : `Ajouter ${amount || ''} ${product.unit}`}
         </button>
       </form>

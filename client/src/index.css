@@ -21,7 +21,7 @@ body {
     disabled:cursor-not-allowed disabled:opacity-50 active:scale-[.98];
 }
 .btn-primary {
-  @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700;
+  @apply btn bg-sun text-ink-900 shadow-sm hover:bg-sun-300;
 }
 .btn-ghost {
   @apply btn border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50;

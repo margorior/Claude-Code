@@ -84,7 +84,7 @@ export default function Users() {
                   <p className="text-[13px] text-slate-400">@{u.username}</p>
                 </div>
                 {roleSelect(u)}
-                <button className="btn-primary !bg-emerald-600 !px-3 !py-2 hover:!bg-emerald-700" onClick={() => update(u.id, { status: 'active' }, `${u.display_name} accepté(e)`)}>
+                <button className="btn-primary !bg-emerald-600 !text-white !px-3 !py-2 hover:!bg-emerald-700" onClick={() => update(u.id, { status: 'active' }, `${u.display_name} accepté(e)`)}>
                   <Check size={16} /> Accepter
                 </button>
                 <button className="btn-ghost !px-3 !py-2 !text-red-600" title="Refuser" onClick={() => setToDelete(u)}>
