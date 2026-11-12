@@ -18,7 +18,7 @@ const CalendarPage = lazy(() => import('./tasks/CalendarPage'));
 
 function TasksPage({ children }) {
   return (
-    <Suspense fallback={<div className="flex justify-center py-24 text-sun"><Spinner className="h-8 w-8" /></div>}>
+    <Suspense fallback={<div className="flex justify-center py-24 text-accent"><Spinner className="h-8 w-8" /></div>}>
       {children}
     </Suspense>
   );

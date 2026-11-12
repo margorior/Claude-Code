@@ -22,11 +22,11 @@ function TaskCard({ task, today, onOpen }) {
   return (
     <article className="flex flex-col gap-3 rounded-2xl border border-ink-650 bg-ink-800 p-3.5">
       <button type="button" onClick={() => onOpen(task.id)} className="flex min-h-[44px] flex-col items-start gap-1.5 rounded-lg text-left">
-        {unseen && <span className="rounded-full bg-sun px-2.5 py-0.5 text-[11px] font-bold text-ink-900">Nouvelle</span>}
+        {unseen && <span className="rounded-full bg-sun px-2.5 py-0.5 text-[11px] font-bold text-neutral-950">Nouvelle</span>}
         <span className="break-words text-base font-bold leading-snug">{task.title}</span>
         <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-ink-300">
           {date?.late && <span className="font-semibold text-late">En retard · à finir le {fmt(task.due_date, { day: 'numeric', month: 'short' })}</span>}
-          {date?.dueToday && <span className="font-semibold text-sun">À finir aujourd'hui</span>}
+          {date?.dueToday && <span className="font-semibold text-accent">À finir aujourd'hui</span>}
           {date && !date.late && !date.dueToday && <span>{date.text}</span>}
           {total > 0 && <span>Check-list {done}/{total}</span>}
           {photos > 0 && <span>{photos} photo{photos > 1 ? 's' : ''}</span>}
@@ -38,7 +38,7 @@ function TaskCard({ task, today, onOpen }) {
           type="button"
           aria-pressed={task.status === 'doing'}
           onClick={() => setStatus(task.status === 'doing' ? 'todo' : 'doing')}
-          className={`t-btn min-h-[48px] border-[1.5px] border-sun text-[15px] ${task.status === 'doing' ? 'bg-sun text-ink-900' : 'text-sun hover:bg-sun/10'}`}
+          className={`t-btn min-h-[48px] border-[1.5px] border-sun text-[15px] ${task.status === 'doing' ? 'bg-sun text-neutral-950' : 'text-accent hover:bg-sun/10'}`}
         >
           En cours
         </button>
@@ -58,7 +58,7 @@ function DoneCard({ task, onOpen }) {
   const { patch } = useTasks();
   return (
     <article className="flex items-center gap-3 rounded-2xl border border-ink-700 bg-ink-850 p-3">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-700 text-sun" aria-hidden="true"><Check size={16} strokeWidth={3} /></span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-700 text-accent" aria-hidden="true"><Check size={16} strokeWidth={3} /></span>
       <button type="button" onClick={() => onOpen(task.id)} className="min-h-[44px] min-w-0 flex-1 break-words text-left text-[15px] font-semibold text-ink-300 line-through">
         {task.title}
       </button>
@@ -143,7 +143,7 @@ export default function MyTasks() {
         >
           {myUnseen.length ? <BellRing size={20} /> : <Bell size={20} />}
           {myUnseen.length > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-sun px-1 text-xs font-bold text-ink-900">{myUnseen.length}</span>
+            <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-sun px-1 text-xs font-bold text-neutral-950">{myUnseen.length}</span>
           )}
         </button>
       </header>
@@ -151,7 +151,7 @@ export default function MyTasks() {
       {status !== 'ready' ? <TasksGate /> : (
         <>
           {myUnseen.slice(0, 3).map((t) => (
-            <button key={t.id} type="button" onClick={() => setOpenId(t.id)} className="flex items-center gap-3 rounded-2xl bg-sun px-3.5 py-3 text-left text-ink-900 transition hover:bg-sun-300">
+            <button key={t.id} type="button" onClick={() => setOpenId(t.id)} className="flex items-center gap-3 rounded-2xl bg-sun px-3.5 py-3 text-left text-neutral-950 transition hover:bg-sun-300">
               <BellRing size={20} className="shrink-0" aria-hidden="true" />
               <span className="min-w-0 flex-1">
                 <span className="block text-xs font-bold">Nouvelle tâche pour vous</span>
@@ -163,7 +163,7 @@ export default function MyTasks() {
 
           {notifyPermission === 'default' && (
             <button type="button" onClick={enableNotifications} className="flex min-h-[44px] items-center gap-2.5 rounded-xl border border-ink-600 px-3.5 py-2 text-left text-[13px] font-semibold text-ink-100 transition hover:bg-ink-750">
-              <Bell size={16} className="shrink-0 text-sun" aria-hidden="true" />
+              <Bell size={16} className="shrink-0 text-accent" aria-hidden="true" />
               Activer les notifications pour être prévenu d'une nouvelle tâche
             </button>
           )}
@@ -196,12 +196,12 @@ export default function MyTasks() {
                     aria-label={`${fmtLong(day)}${has ? ', tâches prévues' : ''}`}
                     onClick={() => setSelected(day)}
                     className={`flex h-[66px] flex-col items-center justify-center gap-0.5 rounded-xl border transition ${
-                      isSelected ? 'border-sun bg-sun text-ink-900' : day === today ? 'border-sun bg-ink-850 text-ink-50' : 'border-ink-700 bg-ink-850 text-ink-50 hover:bg-ink-750'
+                      isSelected ? 'border-sun bg-sun text-neutral-950' : day === today ? 'border-sun bg-ink-850 text-ink-50' : 'border-ink-700 bg-ink-850 text-ink-50 hover:bg-ink-750'
                     }`}
                   >
                     <span className={`text-[11px] font-semibold ${isSelected ? '' : 'text-ink-300'}`}>{fmt(day, { weekday: 'short' })}</span>
                     <span className="text-base font-bold">{fmt(day, { day: 'numeric' })}</span>
-                    <span className={`h-1.5 w-1.5 rounded-full ${has ? (isSelected ? 'bg-ink-900' : 'bg-sun') : ''}`} />
+                    <span className={`h-1.5 w-1.5 rounded-full ${has ? (isSelected ? 'bg-neutral-950' : 'bg-sun') : ''}`} />
                   </button>
                 );
               })}
@@ -210,7 +210,7 @@ export default function MyTasks() {
 
           {nothing && selected === today ? (
             <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-ink-600 px-6 py-10 text-center">
-              <CalendarCheck size={30} className="text-sun" />
+              <CalendarCheck size={30} className="text-accent" />
               <p className="font-semibold">Aucune tâche en attente</p>
               <p className="text-sm text-ink-300">Vous serez prévenu dès qu'une tâche vous sera attribuée.</p>
             </div>

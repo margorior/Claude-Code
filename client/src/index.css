@@ -21,7 +21,7 @@ body {
     disabled:cursor-not-allowed disabled:opacity-50 active:scale-[.98];
 }
 .btn-primary {
-  @apply btn bg-sun text-ink-900 shadow-sm hover:bg-sun-300;
+  @apply btn bg-sun text-neutral-950 shadow-sm hover:bg-sun-300;
 }
 .btn-ghost {
   @apply btn border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50;
@@ -44,17 +44,43 @@ body {
 
 /* ------------------------------------------------------------------ Tâches
    Onglet Tâches : thème noir et jaune */
-body.tasks-dark {
-  background: #111112;
+/* Menu : noir */
+:root {
+  --ink-50: 244 244 242;
+  --ink-100: 228 228 225;
+  --ink-300: 169 169 174;
+  --ink-400: 140 140 146;
+  --ink-600: 58 58 64;
+  --ink-650: 52 52 58;
+  --ink-700: 46 46 51;
+  --ink-750: 37 37 40;
+  --ink-800: 31 31 34;
+  --ink-850: 26 26 28;
+  --ink-900: 17 17 18;
+  --ink-950: 10 10 10;
+  --accent: 255 214 10;
+  --late: 255 159 69;
 }
+/* Pages des tâches : fond clair et fiches blanches, comme le stock */
 .tasks-scope {
-  color-scheme: dark;
-}
-.tasks-scope ::-webkit-scrollbar-thumb {
-  background: #3a3a40;
+  --ink-50: 15 23 42;
+  --ink-100: 51 65 85;
+  --ink-300: 100 116 139;
+  --ink-400: 148 163 184;
+  --ink-600: 203 213 225;
+  --ink-650: 226 232 240;
+  --ink-700: 226 232 240;
+  --ink-750: 241 245 249;
+  --ink-800: 255 255 255;
+  --ink-850: 248 250 252;
+  --ink-900: 241 245 249;
+  --ink-950: 255 255 255;
+  --accent: 133 100 4;
+  --late: 194 65 12;
+  color-scheme: light;
 }
 .tasks-scope :focus-visible {
-  outline: 2px solid #ffd60a;
+  outline: 2px solid #111112;
   outline-offset: 2px;
 }
 
@@ -67,7 +93,7 @@ body.tasks-dark {
     disabled:cursor-not-allowed disabled:opacity-50 active:scale-[.98];
 }
 .t-btn-sun {
-  @apply t-btn bg-sun text-ink-900 hover:bg-sun-300;
+  @apply t-btn bg-sun text-neutral-950 hover:bg-sun-300;
 }
 .t-btn-line {
   @apply t-btn border border-ink-600 bg-transparent text-ink-50 hover:bg-ink-750;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Search, ScrollText, ArrowDownCircle, ArrowUpCircle, PlusCircle, Pencil, Trash2, DatabaseBackup, X } from 'lucide-react';
-import { api } from '../api';
+import { api, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
 import { Spinner, EmptyState, Pagination, useToast } from '../components/ui';
 import ProductModal from '../components/ProductModal';
@@ -147,6 +147,7 @@ export default function History() {
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${a.cls}`}>
                   {opening === m.id ? <Spinner className="h-5 w-5" /> : <Icon size={19} />}
                 </div>
+                {m.photo && <img src={photoUrl(m.photo)} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-xl object-cover" />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-slate-800">{m.product_name}</p>
                   <p className="text-[13px] text-slate-500">

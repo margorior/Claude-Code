@@ -31,14 +31,14 @@ const THEMES = {
   tasks: {
     bar: 'bg-ink-950',
     link: 'text-ink-300 hover:bg-ink-800 hover:text-ink-50',
-    active: 'bg-sun text-ink-900',
+    active: 'bg-sun text-neutral-950',
     switchBox: 'bg-ink-800',
-    switchOn: 'bg-sun text-ink-900',
+    switchOn: 'bg-sun text-neutral-950',
     switchOff: 'text-ink-300 hover:text-ink-50',
     muted: 'text-ink-300',
     line: 'border-ink-700',
-    avatar: 'bg-sun text-ink-900',
-    badge: 'bg-sun text-ink-900 group-aria-[current=page]:bg-ink-950 group-aria-[current=page]:text-sun',
+    avatar: 'bg-sun text-neutral-950',
+    badge: 'bg-sun text-neutral-950 group-aria-[current=page]:bg-ink-950 group-aria-[current=page]:text-accent',
     logo: 'bg-ink-800',
     color: '#0A0A0A',
   },
@@ -73,9 +73,7 @@ function Shell() {
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   useEffect(() => {
-    document.body.classList.toggle('tasks-dark', onTasks);
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.color);
-    return () => document.body.classList.remove('tasks-dark');
   }, [onTasks, theme.color]);
 
   // Déjà installée (lancée depuis l'icône) → on cache le bouton
@@ -154,7 +152,7 @@ function Shell() {
         >
           <Icon size={16} /> {label}
           {badge > 0 && (
-            <span className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-bold ${section === key ? 'bg-ink-950 text-sun' : 'bg-sun text-ink-900'}`}>{badge}</span>
+            <span className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-bold ${section === key ? 'bg-ink-950 text-accent' : 'bg-sun text-neutral-950'}`}>{badge}</span>
           )}
         </Link>
       ))}
@@ -216,7 +214,7 @@ function Shell() {
 
   const logo = (
     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${theme.logo}`}>
-      <Zap size={18} className="text-sun" fill="currentColor" />
+      <Zap size={18} className="text-accent" fill="currentColor" />
     </div>
   );
 

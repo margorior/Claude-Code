@@ -42,7 +42,7 @@ export function TConfirm({ open, onClose, onConfirm, title, message, confirmLabe
         <p className="mt-2 text-sm leading-relaxed text-ink-100">{message}</p>
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button type="button" className="t-btn-line" onClick={onClose}>Annuler</button>
-          <button type="button" className={danger ? 't-btn bg-late text-ink-900 hover:brightness-110' : 't-btn-sun'} onClick={onConfirm}>
+          <button type="button" className={danger ? 't-btn bg-late text-white hover:brightness-110' : 't-btn-sun'} onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>
@@ -72,9 +72,9 @@ export function StatusPill({ task, unseenLabel = 'Pas encore vue', className = '
   if (task.status === 'done')
     return <span className={`${base} bg-ink-700 text-ink-100`}><Check size={13} strokeWidth={3} /> Terminée</span>;
   if (task.status === 'doing')
-    return <span className={`${base} border border-sun text-sun`}><span className="h-1.5 w-1.5 rounded-full bg-sun" /> En cours</span>;
+    return <span className={`${base} border border-sun text-accent`}><span className="h-1.5 w-1.5 rounded-full bg-sun" /> En cours</span>;
   if (task.assignee_id && !task.seen_at)
-    return <span className={`${base} bg-sun text-ink-900`}>{unseenLabel}</span>;
+    return <span className={`${base} bg-sun text-neutral-950`}>{unseenLabel}</span>;
   return <span className={`${base} border border-ink-600 text-ink-100`}>À faire</span>;
 }
 
@@ -103,7 +103,7 @@ export function TaskMeta({ task, today, className = '' }) {
   return (
     <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-300 ${className}`}>
       {date && (
-        <span className={`inline-flex items-center gap-1.5 ${date.late ? 'font-semibold text-late' : date.dueToday ? 'font-semibold text-sun' : ''}`}>
+        <span className={`inline-flex items-center gap-1.5 ${date.late ? 'font-semibold text-late' : date.dueToday ? 'font-semibold text-accent' : ''}`}>
           <CalendarDays size={14} aria-hidden="true" />
           {date.text}{date.suffix ? ` · ${date.suffix}` : ''}
         </span>
@@ -127,12 +127,12 @@ export function TasksGate() {
   const { status, reload } = useTasks();
   if (status === 'ready') return null;
   if (status === 'loading') {
-    return <div className="flex justify-center py-24 text-sun"><Spinner className="h-8 w-8" /></div>;
+    return <div className="flex justify-center py-24 text-accent"><Spinner className="h-8 w-8" /></div>;
   }
   const schema = status === 'schema';
   return (
     <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-ink-700 bg-ink-850 p-6 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-700 text-sun">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-700 text-accent">
         <DatabaseZap size={24} />
       </div>
       <h2 className="font-display text-lg font-bold">{schema ? 'Dernière étape : mettre la base à jour' : 'Impossible de charger les tâches'}</h2>

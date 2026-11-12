@@ -65,7 +65,7 @@ export default function ClosedTasks({ open, onClose }) {
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
         {items === null ? (
-          <div className="flex justify-center py-12 text-sun"><Spinner className="h-7 w-7" /></div>
+          <div className="flex justify-center py-12 text-accent"><Spinner className="h-7 w-7" /></div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-12 text-center text-ink-300">
             <Archive size={28} />

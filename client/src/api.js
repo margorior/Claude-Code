@@ -324,7 +324,15 @@ async function listMovements(q) {
   if (error) ({ data, error, count } = await build('movements_list', true, false));
   if (error) ({ data, error, count } = await build('movements', false, false));
   if (error) throw fail(error.message);
-  return { items: data || [], total: count || 0, page, limit };
+  // Photo du produit concerné, quand il existe encore et qu'il en a une
+  const items = data || [];
+  const ids = [...new Set(items.map((m) => m.product_id).filter((id) => id != null))];
+  if (ids.length) {
+    const { data: rows } = await supabase.from('products').select('id, photo').in('id', ids);
+    const photos = new Map((rows || []).map((r) => [r.id, r.photo]));
+    for (const m of items) m.photo = photos.get(m.product_id) || null;
+  }
+  return { items, total: count || 0, page, limit };
 }
 
 async function movementUsers() {

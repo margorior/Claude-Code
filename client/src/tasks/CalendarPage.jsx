@@ -16,8 +16,8 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const TONES = {
   todo: 'bg-ink-600 text-ink-50',
   new: 'bg-ink-600 text-ink-50',
-  doing: 'bg-sun text-ink-900',
-  late: 'bg-late text-ink-900',
+  doing: 'bg-sun text-neutral-950',
+  late: 'bg-late text-white',
   done: 'bg-ink-750 text-ink-300 line-through',
 };
 const LEGEND = [['todo', 'À faire'], ['doing', 'En cours'], ['late', 'En retard'], ['done', 'Terminée']];
@@ -83,7 +83,7 @@ function WeekRow({ weekStart, month, tasks, today, maxLanes, tall, showWho, peop
             className={`flex flex-col items-start border-b border-r border-ink-700 p-1 text-left transition hover:bg-ink-800 ${i === 0 ? 'border-l' : ''} ${outside ? 'bg-ink-950/60' : ''}`}
           >
             <span className={`flex h-7 min-w-[28px] items-center justify-center rounded-full px-1.5 text-[13px] font-bold ${
-              day === today ? 'bg-sun text-ink-900' : outside ? 'text-ink-400' : 'text-ink-100'
+              day === today ? 'bg-sun text-neutral-950' : outside ? 'text-ink-400' : 'text-ink-100'
             }`}>
               {fmt(day, { day: 'numeric' })}
             </span>
@@ -219,7 +219,7 @@ export default function CalendarPage() {
                   type="button"
                   aria-pressed={view === v}
                   onClick={() => setView(v)}
-                  className={`min-h-[36px] rounded-lg px-3 text-sm font-bold transition ${view === v ? 'bg-sun text-ink-900' : 'text-ink-100 hover:bg-ink-750'}`}
+                  className={`min-h-[36px] rounded-lg px-3 text-sm font-bold transition ${view === v ? 'bg-sun text-neutral-950' : 'text-ink-100 hover:bg-ink-750'}`}
                 >
                   {text}
                 </button>
@@ -232,7 +232,7 @@ export default function CalendarPage() {
             <div className="flex flex-col gap-4 md:hidden">
               {Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).map((day) => (
                 <section key={day} className="flex flex-col gap-2">
-                  <h3 className={`text-[13px] font-bold ${day === today ? 'text-sun' : 'text-ink-300'}`}>
+                  <h3 className={`text-[13px] font-bold ${day === today ? 'text-accent' : 'text-ink-300'}`}>
                     {cap(fmtLong(day))}{day === today ? " · aujourd'hui" : ''}
                   </h3>
                   <DayList day={day} tasks={visible} empty="Rien de prévu." {...common} />

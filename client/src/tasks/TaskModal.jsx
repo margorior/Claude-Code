@@ -42,7 +42,7 @@ function PhotoViewer({ photos, index, onIndex, onClose, onDelete }) {
   return (
     <div className="tasks-scope fixed inset-0 z-[60] flex flex-col bg-black/95" role="dialog" aria-modal="true" aria-label="Photo en grand">
       <div className="flex items-center justify-between gap-3 p-3">
-        <span className="px-2 text-sm font-semibold text-ink-100">Photo {index + 1} sur {photos.length}</span>
+        <span className="px-2 text-sm font-semibold text-white">Photo {index + 1} sur {photos.length}</span>
         <div className="flex gap-2">
           {onDelete && (
             <button type="button" className={round} aria-label="Supprimer cette photo" title="Supprimer cette photo" onClick={() => setConfirm(true)}>
@@ -185,7 +185,7 @@ function Photos({ task, canDelete, columns }) {
             </button>
           ))}
           {Array.from({ length: uploading }, (_, i) => (
-            <div key={`up-${i}`} className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-ink-400 text-sun">
+            <div key={`up-${i}`} className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-ink-400 text-accent">
               <Spinner className="h-5 w-5" />
             </div>
           ))}
@@ -219,7 +219,7 @@ function DateLine({ task }) {
   const info = dateInfo(task, todayISO());
   if (!info) return null;
   return (
-    <p className={`flex items-center gap-2 text-sm ${info.late ? 'font-semibold text-late' : info.dueToday ? 'font-semibold text-sun' : 'text-ink-300'}`}>
+    <p className={`flex items-center gap-2 text-sm ${info.late ? 'font-semibold text-late' : info.dueToday ? 'font-semibold text-accent' : 'text-ink-300'}`}>
       <CalendarDays size={16} aria-hidden="true" />
       {info.text}{info.suffix ? ` · ${info.suffix}` : ''}
     </p>
@@ -229,7 +229,7 @@ function DateLine({ task }) {
 function LocationLine({ location }) {
   if (!location) return null;
   return (
-    <a href={mapsUrl(location)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-sun underline-offset-2 hover:underline">
+    <a href={mapsUrl(location)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-accent underline-offset-2 hover:underline">
       <MapPin size={16} className="shrink-0" aria-hidden="true" />
       <span className="min-w-0 break-words">{location}</span>
       <ExternalLink size={13} className="shrink-0" aria-hidden="true" />
@@ -269,7 +269,7 @@ function WorkerView({ task, onClose }) {
           type="button"
           aria-pressed={task.status === 'doing'}
           onClick={() => setStatus(task.status === 'doing' ? 'todo' : 'doing')}
-          className={`t-btn min-h-[52px] border-[1.5px] border-sun text-base ${task.status === 'doing' ? 'bg-sun text-ink-900' : 'text-sun hover:bg-sun/10'}`}
+          className={`t-btn min-h-[52px] border-[1.5px] border-sun text-base ${task.status === 'doing' ? 'bg-sun text-neutral-950' : 'text-accent hover:bg-sun/10'}`}
         >
           En cours
         </button>
@@ -277,7 +277,7 @@ function WorkerView({ task, onClose }) {
           type="button"
           aria-pressed={task.status === 'done'}
           onClick={() => { setStatus(task.status === 'done' ? 'doing' : 'done'); if (task.status !== 'done') onClose(); }}
-          className={`t-btn min-h-[52px] border-[1.5px] border-ink-50 text-base ${task.status === 'done' ? 'bg-ink-50 text-ink-900' : 'text-ink-50 hover:bg-ink-50/10'}`}
+          className={`t-btn min-h-[52px] border-[1.5px] border-ink-50 text-base ${task.status === 'done' ? 'bg-neutral-900 text-white' : 'text-ink-50 hover:bg-ink-50/10'}`}
         >
           {task.status === 'done' ? <><Check size={18} strokeWidth={3} /> Terminée</> : 'Terminer'}
         </button>
@@ -379,7 +379,7 @@ function AdminView({ task, onClose }) {
                     aria-pressed={task.status === s}
                     onClick={() => task.status !== s && patch(task.id, { status: s })}
                     className={`min-h-[44px] rounded-xl border px-2 text-center text-sm transition md:px-3.5 md:text-left ${
-                      task.status === s ? 'border-sun bg-sun font-bold text-ink-900' : 'border-ink-600 font-semibold text-ink-50 hover:bg-ink-750'
+                      task.status === s ? 'border-sun bg-sun font-bold text-neutral-950' : 'border-ink-600 font-semibold text-ink-50 hover:bg-ink-750'
                     }`}
                   >
                     {STATUS_LABELS[s]}
@@ -423,7 +423,7 @@ function AdminView({ task, onClose }) {
               <label htmlFor="task-location" className="t-label">Lieu</label>
               <input id="task-location" className="t-input min-h-[44px]" placeholder="Adresse ou nom du chantier" value={draft.location} onChange={edit('location')} onBlur={() => saveField('location')} />
               {task.location && (
-                <a href={mapsUrl(task.location)} target="_blank" rel="noreferrer" className="inline-flex min-h-[32px] items-center gap-1.5 self-start text-[13px] font-semibold text-sun underline-offset-2 hover:underline">
+                <a href={mapsUrl(task.location)} target="_blank" rel="noreferrer" className="inline-flex min-h-[32px] items-center gap-1.5 self-start text-[13px] font-semibold text-accent underline-offset-2 hover:underline">
                   <MapPin size={14} /> Ouvrir dans Maps
                 </a>
               )}

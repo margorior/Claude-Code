@@ -22,26 +22,29 @@ export default {
           900: '#111112',
           950: '#0A0A0A',
         },
-        // Onglet Tâches : noir et jaune
+        // Gris de l'onglet Tâches et du menu : les valeurs sont dans index.css
+        // (sombres pour le menu, claires pour les pages)
         ink: {
-          50: '#F4F4F2',
-          100: '#E4E4E1',
-          300: '#A9A9AE',
-          400: '#8C8C92',
-          600: '#3A3A40',
-          650: '#34343A',
-          700: '#2E2E33',
-          750: '#252528',
-          800: '#1F1F22',
-          850: '#1A1A1C',
-          900: '#111112',
-          950: '#0A0A0A',
+          50: 'rgb(var(--ink-50) / <alpha-value>)',
+          100: 'rgb(var(--ink-100) / <alpha-value>)',
+          300: 'rgb(var(--ink-300) / <alpha-value>)',
+          400: 'rgb(var(--ink-400) / <alpha-value>)',
+          600: 'rgb(var(--ink-600) / <alpha-value>)',
+          650: 'rgb(var(--ink-650) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
+          750: 'rgb(var(--ink-750) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          850: 'rgb(var(--ink-850) / <alpha-value>)',
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          950: 'rgb(var(--ink-950) / <alpha-value>)',
         },
         sun: {
           DEFAULT: '#FFD60A',
           300: '#FFE566',
         },
-        late: '#FF9F45',
+        // Texte d'accent (jaune sur fond noir, doré foncé sur fond clair)
+        accent: 'rgb(var(--accent) / <alpha-value>)',
+        late: 'rgb(var(--late) / <alpha-value>)',
       },
       boxShadow: {
         card: '0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.1)',

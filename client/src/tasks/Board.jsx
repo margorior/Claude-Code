@@ -57,7 +57,7 @@ function CardBody({ task, col, today, person, onClose, lifted = false }) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onClose(task); }}
-                className="flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-ink-600 px-2.5 text-xs font-bold text-ink-50 transition hover:border-sun hover:text-sun"
+                className="flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-ink-600 px-2.5 text-xs font-bold text-ink-50 transition hover:border-sun hover:text-accent"
               >
                 <Archive size={13} /> Clôturer
               </button>
@@ -207,7 +207,7 @@ function DockTarget({ col, current }) {
     <div
       ref={setNodeRef}
       className={`flex min-h-[54px] items-center gap-2 rounded-xl border-2 px-2.5 text-sm font-bold leading-tight transition-colors ${
-        isOver ? 'border-sun bg-sun text-ink-900' : current ? 'border-ink-600 bg-ink-900 text-ink-300' : 'border-ink-600 bg-ink-800 text-ink-50'
+        isOver ? 'border-sun bg-sun text-neutral-950' : current ? 'border-ink-600 bg-ink-900 text-ink-300' : 'border-ink-600 bg-ink-800 text-ink-50'
       }`}
     >
       {col.person ? <UserRound size={15} className="shrink-0" aria-hidden="true" /> : col.id === 'done' ? <Check size={15} strokeWidth={3} className="shrink-0" aria-hidden="true" /> : <Inbox size={15} className="shrink-0" aria-hidden="true" />}
@@ -223,9 +223,9 @@ function Dock({ columns, from, target, zoneRef }) {
       {/* Le doigt cache la case visée : on rappelle la destination au-dessus */}
       <p className="mb-2 min-h-[20px] text-center text-sm font-bold" aria-live="polite">
         {!aim ? <span className="text-ink-300">Glissez la tâche sur une destination</span>
-          : aim.person ? <>Relâchez pour attribuer à <span className="text-sun">{aim.title}</span></>
-            : aim.id === 'done' ? <>Relâchez pour la marquer <span className="text-sun">terminée</span></>
-              : <>Relâchez pour la remettre <span className="text-sun">à attribuer</span></>}
+          : aim.person ? <>Relâchez pour attribuer à <span className="text-accent">{aim.title}</span></>
+            : aim.id === 'done' ? <>Relâchez pour la marquer <span className="text-accent">terminée</span></>
+              : <>Relâchez pour la remettre <span className="text-accent">à attribuer</span></>}
       </p>
       <div className={`grid gap-2 ${columns.length > 8 ? 'grid-cols-3' : 'grid-cols-2'}`}>
         {columns.map((c) => <DockTarget key={c.id} col={c} current={c.id === from} />)}
