@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { UsersRound, Check, Trash2, ShieldCheck, Wrench, Eye, Clock, Ban, RotateCcw, ListTodo } from 'lucide-react';
+import { UsersRound, Check, Trash2, ShieldCheck, Wrench, Eye, Clock, Ban, RotateCcw, ListTodo, KeyRound } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { ConfirmDialog, useToast, Spinner, EmptyState } from '../components/ui';
+import { ConfirmDialog, useToast, Spinner, EmptyState, Modal, Field } from '../components/ui';
 
 const ROLES = [
   { value: 'admin', label: 'Administrateur', icon: ShieldCheck, desc: 'Tous les droits : stock, tâches, comptes' },
@@ -16,6 +16,22 @@ export default function Users() {
   const toast = useToast();
   const [users, setUsers] = useState(null);
   const [toDelete, setToDelete] = useState(null);
+  const [pwdUser, setPwdUser] = useState(null);
+  const [pwd, setPwd] = useState('');
+  const [pwdBusy, setPwdBusy] = useState(false);
+
+  const savePassword = async (e) => {
+    e.preventDefault();
+    setPwdBusy(true);
+    try {
+      await api(`/api/users/${pwdUser.id}/password`, { method: 'PUT', json: { password: pwd } });
+      toast(`Nouveau mot de passe enregistré pour ${pwdUser.display_name}`);
+      setPwdUser(null);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    setPwdBusy(false);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -125,6 +141,11 @@ export default function Users() {
                   </div>
                   {roleSelect(u)}
                   {u.id !== me.id && (
+                    <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Changer le mot de passe" aria-label={`Changer le mot de passe de ${u.display_name}`} onClick={() => { setPwd(''); setPwdUser(u); }}>
+                      <KeyRound size={16} />
+                    </button>
+                  )}
+                  {u.id !== me.id && (
                     disabled ? (
                       <button className="btn-ghost !px-3 !py-2" title="Réactiver" onClick={() => update(u.id, { status: 'active' }, `${u.display_name} réactivé(e)`)}>
                         <RotateCcw size={16} /> Réactiver
@@ -141,6 +162,20 @@ export default function Users() {
           </ul>
         )}
       </div>
+
+      <Modal open={!!pwdUser} onClose={() => setPwdUser(null)} title={`Mot de passe de ${pwdUser?.display_name || ''}`}>
+        <form onSubmit={savePassword} className="flex flex-col gap-4">
+          <Field label="Nouveau mot de passe" hint="6 caractères minimum. Il s'affiche en clair pour que vous puissiez le transmettre ; la personne pourra le changer dans Paramètres.">
+            <input className="input" required minLength={6} autoFocus autoComplete="off" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <button type="button" className="btn-ghost" onClick={() => setPwdUser(null)}>Annuler</button>
+            <button className="btn-primary" disabled={pwdBusy || pwd.length < 6}>
+              {pwdBusy ? <Spinner className="h-4 w-4" /> : 'Enregistrer'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <ConfirmDialog
         open={!!toDelete}

@@ -394,6 +394,29 @@ as $$
 $$;
 grant execute on function public.check_registration_password(text) to anon, authenticated;
 
+-- L'administrateur donne un nouveau mot de passe à quelqu'un (mot de passe
+-- oublié). La personne peut ensuite le changer elle-même dans Paramètres.
+create or replace function public.admin_set_password(target uuid, new_password text)
+returns void
+language plpgsql security definer set search_path = public, extensions
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Accès réservé à l''administrateur';
+  end if;
+  if length(coalesce(new_password, '')) < 6 then
+    raise exception 'Le mot de passe doit faire au moins 6 caractères';
+  end if;
+  update auth.users
+    set encrypted_password = crypt(new_password, gen_salt('bf')), updated_at = now()
+    where id = target;
+  if not found then
+    raise exception 'Compte introuvable';
+  end if;
+end $$;
+revoke execute on function public.admin_set_password(uuid, text) from public, anon;
+grant execute on function public.admin_set_password(uuid, text) to authenticated;
+
 -- Prise / remise de matériel : met à jour la quantité + journalise, en une fois
 create or replace function public.adjust_quantity(pid bigint, delta double precision)
 returns double precision

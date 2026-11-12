@@ -369,6 +369,13 @@ async function updateUser(id, patch) {
   return { ok: true };
 }
 
+async function setUserPassword(id, password) {
+  if (String(password || '').length < 6) throw fail('Le mot de passe doit faire au moins 6 caractères');
+  const { error } = await supabase.rpc('admin_set_password', { target: id, new_password: String(password) });
+  if (error) throw fail(isSchemaError(error) ? SCHEMA_HINT : error.message);
+  return { ok: true };
+}
+
 async function deleteUser(id) {
   const { error } = await supabase.from('profiles').delete().eq('id', id);
   if (error) throw fail(error.message);
@@ -586,6 +593,7 @@ export async function api(path, options = {}) {
   if (seg[0] === 'movements') return seg[1] === 'users' ? movementUsers() : listMovements(q);
   if (seg[0] === 'users') {
     if (seg.length === 1) return listUsers();
+    if (seg[2] === 'password') return setUserPassword(seg[1], body.password);
     if (method === 'PUT') return updateUser(seg[1], body);
     if (method === 'DELETE') return deleteUser(seg[1]);
   }
