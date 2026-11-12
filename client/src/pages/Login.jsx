@@ -50,7 +50,7 @@ export default function Login() {
           <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 shadow-pop backdrop-blur">
             <Zap size={30} className="text-amber-300" fill="currentColor" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">Gestion de Stock</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">Gestion Électricité</h1>
           <p className="mt-1 text-sm text-brand-100/80">Matériel électrique · trois stocks, un seul outil</p>
         </div>
 

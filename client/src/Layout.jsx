@@ -225,7 +225,7 @@ function Shell() {
       <aside className={`fixed inset-y-0 left-0 z-40 hidden w-64 flex-col px-4 py-5 lg:flex ${theme.bar} ${section === 'tasks' ? 'border-r border-ink-700' : ''}`}>
         <div className="flex items-center gap-2.5 px-2">
           {logo}
-          <span className="text-lg font-extrabold tracking-tight text-white">Gestion Stock</span>
+          <span className="text-lg font-extrabold tracking-tight text-white">Gestion Électricité</span>
         </div>
         {sectionSwitch()}
         {nav()}

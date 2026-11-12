@@ -1,7 +1,7 @@
 {
-  "name": "Gestion de Stock",
-  "short_name": "Stock",
-  "description": "Gestion de deux stocks de matériel électrique",
+  "name": "Gestion Électricité",
+  "short_name": "Électricité",
+  "description": "Stock de matériel et tâches de l'équipe",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
